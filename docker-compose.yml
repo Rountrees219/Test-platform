@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - footbolzano_db:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/footbolzano.db
+      - DEBUG=false
+      - CORS_ORIGINS=["http://localhost:80","http://frontend"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - footbolzano
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""  # Empty = use proxy via nginx
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - footbolzano
+
+networks:
+  footbolzano:
+    driver: bridge
+
+volumes:
+  footbolzano_db:

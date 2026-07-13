@@ -1,0 +1,18 @@
+[build]
+  base = "footbolzano/frontend"
+  command = "npm run build"
+  publish = "footbolzano/frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA redirect: all routes → index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API proxy to Railway backend (set VITE_API_URL in Netlify env vars instead)
+# Note: VITE_API_URL should be set as an env variable in Netlify dashboard
+# pointing to your Railway backend URL, e.g.:
+# VITE_API_URL = https://your-app.railway.app
