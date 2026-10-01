@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja — Agent Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0b0b12;
+            --bg2: #111119;
+            --card: #16161f;
+            --card-hover: #1c1c28;
+            --terminal: #0d0d14;
+            --text: #eaeaf0;
+            --text2: #9494ad;
+            --text3: #555570;
+            --border: #252535;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --green: #10b981;
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --cyan: #06b6d4;
+            --pink: #ec4899;
+            --r: 12px;
+            --shadow: 0 2px 16px rgba(0,0,0,0.35);
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+            background:
+                radial-gradient(ellipse at 15% 10%, rgba(59,130,246,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 85%, rgba(139,92,246,0.05) 0%, transparent 55%);
+        }
+
+        /* ── Container ── */
+        .container { max-width: 1340px; margin: 0 auto; padding: 28px 24px; position: relative; z-index:1; }
+
+        /* ── Header ── */
+        .hdr {
+            display: flex; align-items: center; gap: 20px;
+            padding: 20px 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .hdr::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background: linear-gradient(90deg, var(--blue), var(--purple), var(--pink));
+            border-radius: 14px 14px 0 0;
+        }
+        .avatar {
+            width: 56px; height: 56px; border-radius: 50%;
+            border: 2px solid var(--purple);
+            box-shadow: 0 0 16px rgba(139,92,246,0.2);
+            object-fit: cover; flex-shrink:0;
+        }
+        .hdr-info { flex:1; min-width:0; }
+        .hdr-name { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+        .hdr-role { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .hdr-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .badge {
+            font-size: 11px; padding: 3px 10px; border-radius: 20px;
+            border: 1px solid var(--border); color: var(--text2);
+            background: rgba(255,255,255,0.02); white-space: nowrap;
+        }
+        .badge .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:4px; vertical-align:middle; }
+        .badge-model { border-color: var(--purple); color: var(--purple); }
+
+        /* Header KPIs */
+        .hdr-kpis { display: flex; gap: 12px; flex-shrink:0; }
+        .hdr-kpis.has-cost-actions { align-items: center; }
+        .kpi {
+            text-align: center; padding: 10px 18px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px; border: 1px solid var(--border);
+            min-width: 90px; position: relative;
+        }
+        .kpi-val { font-size: 20px; font-weight: 700; color: var(--cyan); }
+        .kpi-val.green { color: var(--green); }
+        .kpi-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        /* ── Cost Actions ── */
+        .cost-actions { display:flex; flex-direction:column; gap:8px; justify-content:center; }
+        .cost-btn {
+            display:flex; align-items:center; gap:8px;
+            padding:9px 14px; border-radius:10px;
+            border:1px solid var(--border); background: rgba(255,255,255,0.02);
+            color: var(--text2); font-family:'Inter', sans-serif;
+            font-size:13px; font-weight:600; white-space:nowrap;
+            text-decoration:none; cursor:pointer;
+            transition: border-color 0.2s, background 0.2s, color 0.2s;
+        }
+        .cost-btn:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.18); color: var(--text); }
+        .cost-btn.primary { border-color: rgba(16,185,129,0.35); color: var(--green); }
+        .cost-btn.primary:hover { border-color: var(--green); background: rgba(16,185,129,0.08); color: var(--green); }
+        .cost-btn-icon { font-size:13px; line-height:1; }
+        .cost-btn-arrow { font-size:11px; opacity:0.7; margin-left:auto; }
+        .cost-btn-dot {
+            width:6px; height:6px; border-radius:50%; background: var(--green);
+            box-shadow: 0 0 6px var(--green); flex-shrink:0;
+        }
+        .cost-btn-dot[hidden] { display:none; }
+        .cost-btn-caret { font-size:10px; opacity:0.7; margin-left:auto; transition: transform 0.2s; }
+        .cost-btn-dot + .cost-btn-caret { margin-left:6px; }
+        .cost-btn.open { color: var(--text); border-color: rgba(255,255,255,0.18); background: var(--card-hover); }
+        .cost-btn.open .cost-btn-caret { transform: rotate(180deg); }
+
+        /* ── Credit Limit ── */
+        .lim-panel[hidden] { display:none; }
+        .lim-panel { animation: limReveal 0.18s ease-out; }
+        @keyframes limReveal {
+            from { opacity:0; transform: translateY(-4px); }
+            to { opacity:1; transform:none; }
+        }
+        .lim-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+        .lim-card {
+            background: rgba(255,255,255,0.02); border:1px solid var(--border);
+            border-radius:10px; padding:12px 14px;
+        }
+        .lim-lbl { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+        .lim-val { font-size:20px; font-weight:700; color:var(--text); margin-top:4px; font-family:'JetBrains Mono', monospace; }
+        .lim-val.unset { font-size:14px; font-weight:500; color:var(--text3); font-family:'Inter', sans-serif; }
+        .lim-edit-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
+        .lim-pair { display:flex; align-items:center; gap:6px; }
+        .lim-pair span { font-size:11px; color:var(--text3); }
+        .lim-input {
+            background: var(--bg2); border:1px solid var(--border); color:var(--text);
+            padding:6px 10px; border-radius:6px; font-size:13px; width:96px;
+            font-family:'JetBrains Mono', monospace;
+        }
+        .lim-input::-webkit-outer-spin-button,
+        .lim-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+        .lim-input[type=number] { -moz-appearance:textfield; }
+        .lim-input:focus { outline:none; border-color:var(--blue); }
+        .lim-save {
+            background: var(--blue); border:none; color:#fff;
+            padding:6px 16px; border-radius:6px; font-size:13px; cursor:pointer;
+            transition: opacity 0.15s;
+        }
+        .lim-save:hover { opacity:0.85; }
+        .lim-note { font-size:12px; margin-left:2px; }
+        .lim-note.ok { color:var(--green); }
+        .lim-note.err { color:var(--red); }
+        @media (max-width: 640px) {
+            .lim-grid { grid-template-columns: 1fr; }
+            .lim-edit-row { flex-direction:column; align-items:stretch; }
+            .lim-pair { justify-content:space-between; }
+            .lim-input { width:120px; }
+            .lim-save { width:100%; }
+        }
+
+
+        /* ── Stat Cards Row ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .sc {
+            background: var(--card); border:1px solid var(--border); border-radius: var(--r);
+            padding: 16px 18px; text-align:center;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .sc:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-1px); }
+        .sc-val { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .sc-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; }
+        .sc-bar { height:3px; border-radius:2px; margin-top:10px; opacity:0.5; }
+
+        /* ── Grid Sections ── */
+        .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px; }
+        .panel {
+            background: var(--card); border:1px solid var(--border); border-radius: var(--r);
+            display:flex; flex-direction:column;
+        }
+        .panel-hdr {
+            display:flex; align-items:center; justify-content:space-between;
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            font-size: 13px; font-weight: 600;
+        }
+        .panel-hdr-icon { margin-right: 8px; }
+        .panel-body { padding: 14px 18px; flex:1; overflow:hidden; }
+
+        /* ── Full Width Panel ── */
+        .full-panel { margin-bottom: 20px; }
+
+        /* ── Orchestrator Control ── */
+        .orch-status-row {
+            display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+            margin-bottom: 16px;
+        }
+        .orch-badge {
+            font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px;
+            border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+            display:inline-flex; align-items:center; gap:6px;
+        }
+        .orch-badge .odot { width:8px; height:8px; border-radius:50%; background:var(--text3); }
+        .orch-badge.on    { border-color: var(--green);  color: var(--green); }
+        .orch-badge.on .odot   { background: var(--green); box-shadow:0 0 8px var(--green); }
+        .orch-badge.idle  { border-color: var(--cyan);   color: var(--cyan); }
+        .orch-badge.idle .odot { background: var(--cyan); }
+        .orch-badge.off   { border-color: var(--red);    color: var(--red); }
+        .orch-badge.off .odot  { background: var(--red); }
+
+        .orch-toggles { display:flex; flex-direction:column; gap:14px; }
+        .toggle-row {
+            display:flex; align-items:center; justify-content:space-between; gap:16px;
+            padding: 12px 14px; border:1px solid var(--border); border-radius: 10px;
+            background: rgba(255,255,255,0.015);
+        }
+        .toggle-label { font-size:13px; font-weight:500; color:var(--text); }
+        .toggle-sub { font-size:11px; color:var(--text3); margin-top:3px; line-height:1.4; }
+        /* iOS-style switch */
+        .switch { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+        .switch input { opacity:0; width:0; height:0; }
+        .switch .slider {
+            position:absolute; cursor:pointer; inset:0; border-radius:26px;
+            background: var(--border); transition:.25s;
+        }
+        .switch .slider::before {
+            content:''; position:absolute; height:20px; width:20px; left:3px; bottom:3px;
+            background:#fff; border-radius:50%; transition:.25s;
+        }
+        .switch input:checked + .slider { background: var(--green); }
+        .switch input:checked + .slider::before { transform: translateX(20px); }
+        .switch input:disabled + .slider { opacity:0.4; cursor:not-allowed; }
+
+        .orch-actions { display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
+        .orch-btn {
+            font-size:13px; font-weight:600; padding:9px 20px; border-radius:8px;
+            cursor:pointer; border:1px solid var(--blue); background:var(--blue); color:#fff;
+            transition: all 0.2s;
+        }
+        .orch-btn:hover { filter:brightness(1.1); }
+        .orch-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .orch-meta { font-size:11px; color:var(--text3); }
+        .orch-save-note { font-size:11px; }
+        .orch-save-note.ok { color:var(--green); }
+        .orch-save-note.err { color:var(--red); }
+
+        /* ── Live Logs ── */
+        .log-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+        .log-tab {
+            font-size:11px; padding:4px 12px; border-radius:6px; cursor:pointer;
+            background:rgba(255,255,255,0.04); border:1px solid transparent;
+            color:var(--text2); transition: all 0.2s; white-space:nowrap;
+        }
+        .log-tab:hover { background:rgba(255,255,255,0.07); }
+        .log-tab.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+        .log-controls { display:flex; align-items:center; gap:8px; }
+        .log-check { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text2); cursor:pointer; }
+        .log-check input { accent-color: var(--blue); }
+        .log-btn {
+            font-size:11px; padding:4px 12px; border-radius:6px; cursor:pointer;
+            border:1px solid var(--border); background:transparent; color:var(--text2);
+            transition: all 0.2s;
+        }
+        .log-btn:hover { border-color:var(--text2); color:var(--text); }
+        .log-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+        .log-output {
+            background: var(--terminal);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            line-height: 1.65;
+            max-height: 380px;
+            overflow-y: auto;
+            color: var(--text2);
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        .log-output::-webkit-scrollbar { width:6px; }
+        .log-output::-webkit-scrollbar-track { background:transparent; }
+        .log-output::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+        /* ── Tool Usage ── */
+        .tool-list { max-height: 340px; overflow-y: auto; }
+        .tool-row {
+            display:flex; justify-content:space-between; align-items:center;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 13px;
+        }
+        .tool-row:last-child { border-bottom:none; }
+        .tool-name { font-family:'JetBrains Mono',monospace; color:var(--text); font-size:12px; }
+        .tool-count {
+            font-weight:600; color:var(--cyan);
+            background: rgba(6,182,212,0.1); padding:3px 10px; border-radius:20px;
+            font-size:12px; font-family:'JetBrains Mono',monospace;
+        }
+
+        /* ── Prompts ── */
+        .prompt-list { max-height: 340px; overflow-y: auto; }
+        .prompt-item {
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer; transition: background 0.2s;
+        }
+        .prompt-item:hover { background: rgba(255,255,255,0.02); margin:0 -18px; padding:12px 18px; border-radius:8px; }
+        .prompt-item:last-child { border-bottom:none; }
+        .prompt-time { font-size:11px; color:var(--text3); margin-bottom:4px; }
+        .prompt-text {
+            font-size:12.5px; color:var(--text2); line-height:1.55;
+            overflow:hidden; text-overflow:ellipsis;
+            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+        }
+        .prompt-badges { display:flex; gap:6px; margin-top:6px; }
+        .prompt-badge {
+            font-size:10px; padding:2px 8px; border-radius:4px;
+            font-family:'JetBrains Mono',monospace;
+        }
+        .prompt-badge.tools { background:rgba(6,182,212,0.12); color:var(--cyan); }
+        .prompt-badge.steps { background:rgba(139,92,246,0.12); color:var(--purple); }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display:none; position:fixed; inset:0; z-index:500;
+            background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+            align-items:center; justify-content:center;
+        }
+        .modal-overlay.show { display:flex; }
+        .modal {
+            background:var(--card); border:1px solid var(--border); border-radius:14px;
+            width:92%; max-width:900px; max-height:90vh;
+            display:flex; flex-direction:column;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        }
+        .modal-hdr {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:16px 20px; border-bottom:1px solid var(--border);
+        }
+        .modal-hdr h3 { font-size:15px; font-weight:600; }
+        .modal-close {
+            width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
+            background:transparent; color:var(--text2); cursor:pointer;
+            display:flex; align-items:center; justify-content:center; font-size:16px;
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background:var(--red); color:#fff; border-color:var(--red); }
+        .modal-body {
+            padding:20px; overflow-y:auto; flex:1;
+        }
+        .modal-prompt {
+            background: var(--terminal); border-radius:8px; padding:14px;
+            font-size:12.5px; line-height:1.6; color:var(--text2);
+            margin-bottom:16px; white-space:pre-wrap; word-break:break-word;
+            max-height:120px; overflow-y:auto;
+        }
+        .modal-section-title {
+            font-size:12px; font-weight:600; text-transform:uppercase;
+            letter-spacing:0.5px; color:var(--text3); margin-bottom:10px;
+        }
+
+        /* Trajectory steps */
+        .traj-steps { max-height:60vh; overflow-y:auto; }
+        .ts {
+            display:flex; gap:10px; padding:8px 12px;
+            border-left:2px solid var(--border); margin-left:8px;
+            position:relative; transition: background 0.2s;
+        }
+        .ts:hover { background:rgba(255,255,255,0.02); }
+        .ts::before {
+            content:''; position:absolute; left:-6px; top:14px;
+            width:10px; height:10px; border-radius:50%;
+            border:2px solid var(--border); background:var(--card);
+        }
+        .ts.tu { border-left-color:var(--cyan); }
+        .ts.tu::before { border-color:var(--cyan); background:rgba(6,182,212,0.3); }
+        .ts.tr { border-left-color:var(--orange); }
+        .ts.tr::before { border-color:var(--orange); background:rgba(245,158,11,0.3); }
+        .ts.at { border-left-color:var(--green); }
+        .ts.at::before { border-color:var(--green); background:rgba(16,185,129,0.3); }
+        .ts-icon { font-size:14px; min-width:22px; text-align:center; padding-top:1px; }
+        .ts-body { flex:1; min-width:0; }
+        .ts-lbl {
+            font-size:10px; font-weight:600; text-transform:uppercase;
+            letter-spacing:0.5px; margin-bottom:2px;
+        }
+        .ts-lbl.lbl-tu { color:var(--cyan); }
+        .ts-lbl.lbl-tr { color:var(--orange); }
+        .ts-lbl.lbl-at { color:var(--green); }
+        .ts-detail {
+            font-family:'JetBrains Mono',monospace; font-size:11px;
+            color:var(--text2); white-space:pre-wrap; word-break:break-word;
+            max-height:300px; overflow-y:auto; line-height:1.5;
+            background: rgba(0,0,0,0.15); border-radius:6px; padding:6px 8px;
+            margin-top:4px;
+        }
+
+        /* ── Chart Section ── */
+        .chart-wrap { padding: 14px 18px; }
+        .chart-canvas { max-height: 260px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .hdr { flex-direction:column; text-align:center; }
+            .hdr-kpis { justify-content:center; }
+            .hdr-badges { justify-content:center; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .grid2 { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .hdr-kpis { flex-wrap:wrap; }
+            .hdr-kpis.has-cost-actions {
+                display:grid; grid-template-columns: repeat(2, 1fr); width:100%;
+            }
+            .hdr-kpis.has-cost-actions .cost-actions {
+                grid-column: 1 / -1; flex-direction:row;
+            }
+            .hdr-kpis.has-cost-actions .cost-btn { flex:1; min-width:0; justify-content:center; padding:11px 12px; }
+            .hdr-kpis.has-cost-actions .cost-btn-arrow,
+            .hdr-kpis.has-cost-actions .cost-btn-caret { margin-left:0; }
+            .hdr-kpis.has-cost-actions .kpi { min-width:0; }
+            .log-panel-hdr { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .log-hdr-left { flex-wrap: wrap; width: 100%; }
+            .log-controls { flex-wrap: wrap; width: 100%; }
+            .toggle-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+        @media (max-width: 420px) {
+            .hdr-kpis.has-cost-actions .cost-actions { flex-direction:column; }
+        }
+
+        /* ── Scrollbars ── */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    </style>
+    <script src="https://sites.super.betamyninja.ai/_assets/ninja-daytona-script.js"></script>
+    {% if phantom_usage_enabled %}<script src="/static/js/constants.js"></script>{% endif %}
+</head>
+<body>
+    <div class="container">
+
+        <!-- ═══ HEADER ═══ -->
+        <div class="hdr" id="header">
+            <img class="avatar" id="agentAvatar" src="" alt="">
+            <div class="hdr-info">
+                <div class="hdr-name" id="agentName">Loading…</div>
+                <div class="hdr-role" id="agentRole"></div>
+                <div class="hdr-badges">
+                    <span class="badge"><span class="dot"></span><span id="agentStatus">Online</span></span>
+                    <span class="badge" id="agentChannel"></span>
+                    <span class="badge" id="agentWorkspace"></span>
+                    <span class="badge badge-model" id="agentModel">🧠 …</span>
+                </div>
+            </div>
+            <div class="hdr-kpis{% if phantom_usage_enabled %} has-cost-actions{% endif %}">
+                {% if phantom_usage_enabled %}
+                <div class="cost-actions">
+                    <a href="{{ super_ninja_usage_url }}" class="cost-btn primary" target="_blank" rel="noopener">
+                        <span class="cost-btn-icon">📊</span>
+                        <span>View Usage</span>
+                        <span class="cost-btn-arrow">↗</span>
+                    </a>
+                    <button type="button" class="cost-btn" id="creditLimitBtn" onclick="toggleLimitPanel()" aria-expanded="false" aria-controls="spendLimits">
+                        <span class="cost-btn-icon">🛡️</span>
+                        <span>Credit Limit</span>
+                        <span class="cost-btn-dot" id="creditLimitDot" hidden title="Limits are active"></span>
+                        <span class="cost-btn-caret" id="creditLimitCaret">▾</span>
+                    </button>
+                </div>
+                {% else %}
+                <a href="/cost" class="kpi" style="text-decoration:none; cursor:pointer; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor=''">
+                    <div class="kpi-val green" id="totalCost" style="font-size:18px;">—</div>
+                    <div class="kpi-lbl">Total Cost</div>
+                </a>
+                {% endif %}
+
+                <div class="kpi">
+                    <div class="kpi-val" id="totalMessages">0</div>
+                    <div class="kpi-lbl">Messages</div>
+                </div>
+                <div class="kpi">
+                    <div class="kpi-val" id="totalTools">0</div>
+                    <div class="kpi-lbl">Tool Uses</div>
+                </div>
+            </div>
+        </div>
+
+        {% if phantom_usage_enabled %}
+        <!-- ═══ SPEND LIMITS ═══ -->
+        <div class="panel full-panel lim-panel" id="spendLimits" hidden>
+            <div class="panel-hdr">
+                <span>🛡️ Credit Limit</span>
+                <span style="font-size:11px; font-weight:400; color:var(--text3);">Tasks pause when a limit is reached</span>
+            </div>
+            <div class="panel-body">
+                <div class="lim-grid">
+                    <div class="lim-card">
+                        <div class="lim-lbl">Daily Limit</div>
+                        <div class="lim-val unset" id="dailyLimitVal">No limit set</div>
+                    </div>
+                    <div class="lim-card">
+                        <div class="lim-lbl">Monthly Limit</div>
+                        <div class="lim-val unset" id="monthlyLimitVal">No limit set</div>
+                    </div>
+                    <div class="lim-card">
+                        <div class="lim-lbl">Total Limit</div>
+                        <div class="lim-val unset" id="totalLimitVal">No limit set</div>
+                    </div>
+                </div>
+                <div class="lim-edit-row">
+                    <div class="lim-pair">
+                        <span>Daily</span>
+                        <input class="lim-input" type="number" id="dailyLimitInput" min="0" step="1" placeholder="e.g. 5">
+                    </div>
+                    <div class="lim-pair">
+                        <span>Monthly</span>
+                        <input class="lim-input" type="number" id="monthlyLimitInput" min="0" step="1" placeholder="e.g. 30">
+                    </div>
+                    <div class="lim-pair">
+                        <span>Total</span>
+                        <input class="lim-input" type="number" id="totalLimitInput" min="0" step="1" placeholder="e.g. 100">
+                    </div>
+                    <button class="lim-save" onclick="saveLimits()">Save</button>
+                    <span class="lim-note" id="limitNote"></span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ═══ ORCHESTRATOR CONTROL ═══ -->
+        <div class="panel full-panel" id="orchestratorControl">
+            <div class="panel-hdr">
+                <span>🎛️ Orchestrator Control</span>
+            </div>
+            <div class="panel-body">
+                <div class="orch-toggles">
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Orchestrator enabled</div>
+                            <div class="toggle-sub">Master switch. When off, the monitor stops launching work cycles and any running cycle exits — no further spend.</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="orchEnabled" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="orch-actions">
+                    <span class="orch-save-note" id="orchSaveNote"></span>
+                    <span class="orch-meta" id="orchMeta" style="margin-left:auto;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ UPGRADE ═══ -->
+        <div class="upgrade-bar" id="upgradeBar" style="display:flex;align-items:center;gap:12px;margin:14px 0;padding:10px 14px;background:var(--panel,#161616);border:1px solid var(--border,#2a2a2a);border-radius:8px;">
+            <button class="log-btn" id="upgradeBtn" onclick="triggerUpgrade()" style="white-space:nowrap;">⬆ Check &amp; Upgrade</button>
+            <span id="upgradeStatus" style="font-size:13px;color:var(--muted,#888);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Idle</span>
+        </div>
+
+        <!-- ═══ STAT CARDS ═══ -->
+        <div class="stats-grid" id="statsRow">
+            <div class="sc">
+                <div class="sc-val" id="inputTokens" style="color:var(--blue)">0</div>
+                <div class="sc-lbl">Base Input (uncached)</div>
+                <div class="sc-bar" style="background:var(--blue)"></div>
+            </div>
+            <div class="sc">
+                <div class="sc-val" id="outputTokens" style="color:var(--purple)">0</div>
+                <div class="sc-lbl">Output Tokens</div>
+                <div class="sc-bar" style="background:var(--purple)"></div>
+            </div>
+            <div class="sc">
+                <div class="sc-val" id="cacheWrite5mTokens" style="color:var(--orange)">0</div>
+                <div class="sc-lbl">Cache Write (5m)</div>
+                <div class="sc-bar" style="background:var(--orange)"></div>
+            </div>
+            <div class="sc">
+                <div class="sc-val" id="cacheWrite1hTokens" style="color:var(--red)">0</div>
+                <div class="sc-lbl">Cache Write (1h)</div>
+                <div class="sc-bar" style="background:var(--red)"></div>
+            </div>
+            <div class="sc">
+                <div class="sc-val" id="cacheReadTokens" style="color:var(--green)">0</div>
+                <div class="sc-lbl">Cache Read</div>
+                <div class="sc-bar" style="background:var(--green)"></div>
+            </div>
+        </div>
+
+        <!-- ═══ LIVE LOGS (full width) ═══ -->
+        <div class="panel full-panel">
+            <div class="panel-hdr log-panel-hdr">
+                <div class="log-hdr-left" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span>📋 Live Logs</span>
+                    <div class="log-tabs" id="logTabs"></div>
+                </div>
+                <div class="log-controls">
+                    <label class="log-check"><input type="checkbox" id="hideHeartbeats" checked onchange="reloadCurrentLog()"> Hide heartbeats</label>
+                    <button class="log-btn" id="autoScrollBtn" onclick="toggleAutoScroll()">⬇ Auto-scroll</button>
+                    <button class="log-btn" onclick="clearLogs()">✕ Clear</button>
+                </div>
+            </div>
+            <div class="panel-body" style="padding:10px 14px;">
+                <div class="log-output" id="logOutput">Waiting for logs…</div>
+            </div>
+        </div>
+
+        <!-- ═══ TOOL USAGE + RECENT PROMPTS ═══ -->
+        <div class="grid2">
+            <div class="panel">
+                <div class="panel-hdr">
+                    <span>🔧 Tool Usage</span>
+                    <span style="font-size:12px;color:var(--text3);" id="toolTotal">0 total</span>
+                </div>
+                <div class="panel-body">
+                    <div class="tool-list" id="toolList"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-hdr">
+                    <span>💬 Recent Prompts</span>
+                </div>
+                <div class="panel-body">
+                    <div class="prompt-list" id="promptList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TOKEN TIMELINE ═══ -->
+        <div class="panel full-panel">
+            <div class="panel-hdr"><span>📊 Token Usage Timeline</span></div>
+            <div class="chart-wrap">
+                <canvas id="tokenChart" class="chart-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ PROMPT MODAL ═══ -->
+    <div class="modal-overlay" id="promptModal" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-hdr">
+                <h3>🔍 Agentic Trajectory</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        /* ═══════════ STATE ═══════════ */
+        let currentLogFile = '';
+        let logPollingInterval = null;
+        let autoScroll = true;
+        let promptsData = [];
+        let tokenChart = null;
+
+        /* ═══════════ INIT ═══════════ */
+        async function init() {
+            await loadAgent();
+            await Promise.all([loadStats(), loadLogFiles(), loadTools(), loadPrompts(), loadChart(), loadTotalCost(), {% if phantom_usage_enabled %}loadLimits(), {% endif %}loadOrchestratorConfig()]);
+            setInterval(loadStats, 30000);
+            setInterval(loadPrompts, 60000);
+            setInterval(loadTools, 60000);
+            setInterval(loadChart, 60000);
+            setInterval(loadTotalCost, 30000);
+            await loadOrchestratorConfig();
+        }
+
+        async function loadTotalCost() {
+            const el = document.getElementById('totalCost');
+            if (!el) return;
+            try {
+                const res = await fetch('/api/cost/prompts');
+                const { prompts } = await res.json();
+                const total = prompts.filter(p => p.cost != null).reduce((s, p) => s + p.cost, 0);
+                el.textContent = total > 0 ? `$${total.toFixed(4)}` : '—';
+            } catch(e) { console.error('loadTotalCost:', e); }
+        }
+
+        {% if phantom_usage_enabled %}
+        /* ═══════════ CREDIT LIMIT ═══════════ */
+        function toggleLimitPanel() {
+            const panel = document.getElementById('spendLimits');
+            const btn = document.getElementById('creditLimitBtn');
+            const open = panel.hasAttribute('hidden');
+            panel.toggleAttribute('hidden', !open);
+            btn.classList.toggle('open', open);
+            btn.setAttribute('aria-expanded', String(open));
+            if (open) {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                document.getElementById('dailyLimitInput').focus();
+            }
+        }
+
+        const LIMIT_FIELDS = [
+            { key: 'daily',   input: 'dailyLimitInput',   val: 'dailyLimitVal' },
+            { key: 'monthly', input: 'monthlyLimitInput', val: 'monthlyLimitVal' },
+            { key: 'total',   input: 'totalLimitInput',   val: 'totalLimitVal' },
+        ];
+
+        function renderLimits(costLimit) {
+            let anySet = false;
+            for (const f of LIMIT_FIELDS) {
+                const value = costLimit?.[f.key];
+                const el = document.getElementById(f.val);
+                const set = value != null && value > 0;
+                if (set) anySet = true;
+                el.classList.toggle('unset', !set);
+                el.textContent = set ? `$${Number(value).toFixed(2)}` : 'No limit set';
+                if (set) document.getElementById(f.input).value = value;
+            }
+            document.getElementById('creditLimitDot').toggleAttribute('hidden', !anySet);
+        }
+
+        async function loadLimits() {
+            if (!document.getElementById('spendLimits')) return;
+            try {
+                const res = await fetch('/api/cost/limit');
+                const { cost_limit } = await res.json();
+                renderLimits(cost_limit || {});
+            } catch(e) { console.error('loadLimits:', e); }
+        }
+
+        async function saveLimits() {
+            const note = document.getElementById('limitNote');
+            const vals = {};
+            for (const f of LIMIT_FIELDS) {
+                const raw = parseFloat(document.getElementById(f.input).value);
+                if (!isNaN(raw) && raw > 0) vals[f.key] = raw;
+            }
+
+            const err =
+                (vals.total && vals.monthly && vals.monthly > vals.total) ? ERR_MONTHLY_EXCEEDS_TOTAL :
+                (vals.total && vals.daily && vals.daily > vals.total) ? ERR_DAILY_EXCEEDS_TOTAL :
+                (vals.monthly && vals.daily && vals.daily > vals.monthly) ? ERR_DAILY_EXCEEDS_MONTHLY : null;
+            if (err) { note.className = 'lim-note err'; note.textContent = err; return; }
+
+            try {
+                const res = await fetch('/api/cost/limit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cost_limit: vals }),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    note.className = 'lim-note err';
+                    note.textContent = data.error || ERR_SAVE_FAILED;
+                    return;
+                }
+                renderLimits(vals);
+                note.className = 'lim-note ok';
+                note.textContent = '✓ Saved';
+                setTimeout(() => { note.textContent = ''; }, 3000);
+            } catch(e) {
+                note.className = 'lim-note err';
+                note.textContent = ERR_SAVE_FAILED;
+            }
+        }
+        {% endif %}
+
+        /* ═══════════ NINJA UPGRADE ═══════════ */
+        const UPGRADE_LABELS = {
+            running: '⏳ Upgrading…', upgraded: '✅ Upgraded', rolled_back: '↩️ Rolled back (still on old version)',
+            conflict: '⚠️ Needs review — conflicts held back',
+            up_to_date: '✔ Already up to date', error: '❌ Failed', done: 'Done', idle: 'Idle'
+        };
+        async function triggerUpgrade() {
+            const btn = document.getElementById('upgradeBtn');
+            const st = document.getElementById('upgradeStatus');
+            if (!confirm('Upgrade ninja to the latest published version? Your customizations are preserved; services restart briefly and it rolls back automatically if anything fails.')) return;
+            btn.disabled = true; st.textContent = 'Starting…';
+            try {
+                const r = await fetch('/api/upgrade', { method: 'POST' });
+                const d = await r.json().catch(() => ({}));
+                if (r.status === 409) { st.textContent = '⏳ An upgrade is already running…'; return pollUpgradeStatus(); }
+                if (!r.ok) { st.textContent = '❌ ' + (d.message || ('HTTP ' + r.status)); btn.disabled = false; return; }
+                pollUpgradeStatus();
+            } catch (e) { st.textContent = '❌ ' + e; btn.disabled = false; }
+        }
+        async function pollUpgradeStatus() {
+            const btn = document.getElementById('upgradeBtn');
+            const st = document.getElementById('upgradeStatus');
+            try {
+                const d = await (await fetch('/api/upgrade/status')).json();
+                st.textContent = UPGRADE_LABELS[d.outcome] || 'Done';
+                if (d.running) { btn.disabled = true; setTimeout(pollUpgradeStatus, 2000); }
+                else { btn.disabled = false; }
+            } catch (e) { st.textContent = 'status error: ' + e; btn.disabled = false; }
+        }
+        init();
+        pollUpgradeStatus();   // reflect any in-flight run / last outcome
+
+        /* ═══════════ ORCHESTRATOR CONTROL (save-on-toggle) ═══════════ */
+
+        // While a save is in flight for any orchestrator toggle, polls must not
+        // touch the checkboxes. A single flag is enough now that there is no
+        // "unsaved edits" concept — every change is saved immediately.
+        let orchSaving = false;
+        // let orchSeq = 0;  // incremented on every save to detect stale poll results
+
+        const orchEnabledEl = document.getElementById('orchEnabled');
+
+        // Wire both toggles to the same save-on-change handler.
+        orchEnabledEl.addEventListener('change', onOrchToggleChange);
+
+        function renderOrchestrator(enabled, updatedAt) {
+            const orchEnabledEl = document.getElementById('orchEnabled');
+            orchEnabledEl.checked = enabled !== false;
+            if (updatedAt !== undefined) {
+                document.getElementById('orchMeta').textContent =
+                    updatedAt ? `Last change at ${formatTime(updatedAt)}` : '';
+            }
+        }
+
+        function setOrchNote(cls, text) {
+            const note = document.getElementById('orchSaveNote');
+            note.className = 'orch-save-note' + (cls ? ' ' + cls : '');
+            note.textContent = text;
+        }
+
+        async function onOrchToggleChange(evt) {
+            // Value the user just selected — this is our optimistic intent.
+            const desired = evt.target.checked;
+            const previousValue = !desired;
+            const orchEnabledEl = document.getElementById('orchEnabled');
+
+            orchSaving = true;
+            orchEnabledEl.disabled = true;
+
+            try {
+                const r = await fetch('/api/orchestrator/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: desired, updated_by: 'admin' })
+                });
+                const d = await r.json();
+
+                if (r.ok && d.ok) {
+                    // Success — the toggle keeps its new value.
+                    renderOrchestrator(d.enabled, (d.config || {}).updated_at);
+                } else {
+                    // Backend rejected — revert the toggle the user changed.
+                    renderOrchestrator(previousValue);
+                    setOrchNote('err', '✕ ' + (d.error || 'Save failed'));
+                    console.log('onOrchToggleChange: backend rejected:', d);
+                }
+            } catch (e) {
+                // Network error — revert.
+                renderOrchestrator(previousValue);
+                setOrchNote('err', '✕ Network error');
+                console.error('onOrchToggleChange:', e);
+            } finally {
+                // Re-enable the toggles ONLY now that the write is confirmed
+                // (or reverted). This is the single point where the grey-out ends.
+                orchSaving = false;
+                orchEnabledEl.disabled = false;
+                setTimeout(() => setOrchNote(""), 4000);
+            }
+        }
+
+        async function loadOrchestratorConfig() {
+            try {
+                const r = await fetch('/api/orchestrator/config');
+                const d = await r.json();
+                const cfg = d.config || {};
+
+                // Always safe to update the read-only audit meta.
+                const meta = document.getElementById('orchMeta');
+                meta.textContent = cfg.updated_at
+                    ? `Last change at ${formatTime(cfg.updated_at)}`
+                    : '';
+
+                // Only sync the checkboxes when we are NOT mid-save. While saving,
+                // the toggles are greyed out and pinned to the user's choice.
+                if (!orchSaving) {
+                    orchEnabledEl.checked = cfg.enabled !== false;
+                }
+            } catch (e) {
+                console.error('loadOrchestratorConfig:', e);
+            }
+        }
+
+
+        /* ═══════════ AGENT INFO ═══════════ */
+        async function loadAgent() {
+            try {
+                const r = await fetch('/api/agent');
+                const d = await r.json();
+                document.getElementById('agentName').textContent = d.name || 'Ninja';
+                document.getElementById('agentRole').textContent = d.role || '';
+                const avatarUrl = d.avatar || d.icon_url || '';
+                if (avatarUrl) document.getElementById('agentAvatar').src = avatarUrl;
+                const ch = document.getElementById('agentChannel'), ws = document.getElementById('agentWorkspace');
+                ch.hidden = !d.channel;
+                if (d.channel) ch.textContent = '# ' + d.channel.replace(/^#\s*/, '');
+                ws.hidden = !d.workspace;
+                if (d.workspace) ws.textContent = d.workspace;
+                if (d.color) {
+                    document.querySelector('.avatar').style.borderColor = d.color;
+                    document.querySelector('.avatar').style.boxShadow = `0 0 16px ${d.color}33`;
+                }
+            } catch(e) { console.error('loadAgent:', e); }
+        }
+
+        /* ═══════════ STATS ═══════════ */
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/claude-monitor/stats');
+                const data = await res.json();
+                const s = data.stats || {};
+
+                document.getElementById('totalMessages').textContent = formatNumber(s.total_messages || 0);
+                document.getElementById('totalTools').textContent = formatNumber(s.total_tool_uses || 0);
+                document.getElementById('inputTokens').textContent = formatTokens(s.total_input_tokens || 0);
+                document.getElementById('outputTokens').textContent = formatTokens(s.total_output_tokens || 0);
+                document.getElementById('cacheWrite5mTokens').textContent = formatTokens(s.total_cache_write_5m_tokens || 0);
+                document.getElementById('cacheWrite1hTokens').textContent = formatTokens(s.total_cache_write_1h_tokens || 0);
+                document.getElementById('cacheReadTokens').textContent = formatTokens(s.total_cache_read_tokens || 0);
+
+                // Model badge
+                if (s.model) {
+                    document.getElementById('agentModel').textContent = `🧠 ${s.model}`;
+                } else {
+                    document.getElementById('agentModel').textContent = '🧠 No model data';
+                }
+
+            } catch(e) { console.error('loadStats:', e); }
+        }
+
+        /* ═══════════ LOG FILES ═══════════ */
+        async function loadLogFiles() {
+            try {
+                const r = await fetch('/api/logs');
+                const data = await r.json();
+                const files = (data.files || []).map(f => f.name || f);
+                const tabs = document.getElementById('logTabs');
+                tabs.innerHTML = '';
+                files.forEach((f, i) => {
+                    const t = document.createElement('span');
+                    t.className = 'log-tab' + (i === 0 ? ' active' : '');
+                    t.textContent = f;
+                    t.onclick = () => selectLog(f, t);
+                    tabs.appendChild(t);
+                });
+                if (files.length > 0) selectLog(files[0], tabs.children[0]);
+            } catch(e) { console.error('loadLogFiles:', e); }
+        }
+
+        async function selectLog(filename, tabEl) {
+            document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+            if (tabEl) tabEl.classList.add('active');
+            currentLogFile = filename;
+            await fetchLogContent(filename);
+            startLogPolling(filename);
+        }
+
+        function logApiPath(filename) {
+            // Strip .log extension to avoid proxy 403 blocking
+            const clean = filename.replace(/\.log$/, '');
+            return `/api/logs/${encodeURIComponent(clean)}?lines=500`;
+        }
+
+        async function fetchLogContent(filename) {
+            try {
+                const r = await fetch(logApiPath(filename));
+                const data = await r.json();
+                const text = data.content || '';
+                const el = document.getElementById('logOutput');
+                el.innerHTML = '';
+                text.split('\n').forEach(line => { if (shouldShowLine(line)) appendLogLine(line); });
+                if (autoScroll) el.scrollTop = 0;
+            } catch(e) { console.error('fetchLog:', e); }
+        }
+
+        function startLogPolling(filename) {
+            if (logPollingInterval) clearInterval(logPollingInterval);
+            logPollingInterval = setInterval(() => {
+                if (currentLogFile === filename) fetchLogContent(filename);
+            }, 5000);
+        }
+
+        function shouldShowLine(text) {
+            if (!text.trim()) return false;
+            if (document.getElementById('hideHeartbeats').checked) {
+                const lower = text.toLowerCase();
+                if (lower.includes('heartbeat') || lower.includes('♥') || lower.includes('ping')) return false;
+            }
+            return true;
+        }
+
+        function appendLogLine(text) {
+            const el = document.getElementById('logOutput');
+            const div = document.createElement('div');
+            div.innerHTML = colorizeLog(text);
+            el.appendChild(div);
+        }
+
+        function reloadCurrentLog() {
+            if (currentLogFile) fetchLogContent(currentLogFile);
+        }
+
+        function colorizeLog(text) {
+            let s = escapeHtml(text);
+            s = s.replace(/\b(ERROR|CRITICAL|FATAL)\b/gi, '<span style="color:var(--red);font-weight:600">$1</span>');
+            s = s.replace(/\b(WARNING|WARN)\b/gi, '<span style="color:var(--orange);font-weight:600">$1</span>');
+            s = s.replace(/\b(INFO)\b/gi, '<span style="color:var(--blue);font-weight:500">$1</span>');
+            s = s.replace(/\b(DEBUG)\b/gi, '<span style="color:var(--text3)">$1</span>');
+            s = s.replace(/\b(SUCCESS|COMPLETED|DONE|✅)\b/gi, '<span style="color:var(--green);font-weight:600">$1</span>');
+            s = s.replace(/((?:\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}))/g, '<span style="color:var(--text3)">$1</span>');
+            return s;
+        }
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = document.getElementById('autoScrollBtn');
+            btn.classList.toggle('active', autoScroll);
+        }
+
+        function clearLogs() {
+            document.getElementById('logOutput').innerHTML = '';
+        }
+
+        /* ═══════════ TOOLS ═══════════ */
+        async function loadTools() {
+            try {
+                const r = await fetch('/api/claude-monitor/tools/summary');
+                const d = await r.json();
+                const el = document.getElementById('toolList');
+                document.getElementById('toolTotal').textContent = `${d.total || 0} total`;
+                el.innerHTML = '';
+                (d.summary || []).forEach(t => {
+                    el.innerHTML += `<div class="tool-row"><span class="tool-name">${escapeHtml(t.name)}</span><span class="tool-count">${t.count}</span></div>`;
+                });
+            } catch(e) { console.error('loadTools:', e); }
+        }
+
+        /* ═══════════ PROMPTS ═══════════ */
+        async function loadPrompts() {
+            try {
+                const r = await fetch('/api/claude-monitor/prompts');
+                const data = await r.json();
+                promptsData = data.prompts || data || [];
+                const el = document.getElementById('promptList');
+                el.innerHTML = '';
+                (promptsData || []).forEach((p, i) => {
+                    const toolBadge = p.tool_count ? `<span class="prompt-badge tools">🔧 ${p.tool_count} tools</span>` : '';
+                    const stepBadge = p.step_count ? `<span class="prompt-badge steps">📍 ${p.step_count} steps</span>` : '';
+                    el.innerHTML += `
+                        <div class="prompt-item" onclick="openPromptModal(${i})">
+                            <div class="prompt-time">${formatTime(p.timestamp)}</div>
+                            <div class="prompt-text">${escapeHtml(p.content || '')}</div>
+                            <div class="prompt-badges">${toolBadge}${stepBadge}</div>
+                        </div>`;
+                });
+            } catch(e) { console.error('loadPrompts:', e); }
+        }
+
+        function openPromptModal(index) {
+            const p = promptsData[index];
+            if (!p) return;
+            const modal = document.getElementById('promptModal');
+            const body = document.getElementById('modalBody');
+
+            let html = `<div class="modal-prompt">${escapeHtml(p.content || '')}</div>`;
+
+            if (p.steps && p.steps.length > 0) {
+                html += `<div class="modal-section-title">Trajectory (${p.steps.length} steps)</div>`;
+                html += `<div class="traj-steps">`;
+                p.steps.forEach(step => {
+                    if (step.type === 'tool_use') {
+                        const inputText = step.input || step.detail || '';
+                        html += `
+                            <div class="ts tu">
+                                <div class="ts-icon">🔧</div>
+                                <div class="ts-body">
+                                    <div class="ts-lbl lbl-tu">Tool Use → ${escapeHtml(step.name || '')}</div>
+                                    ${inputText ? `<div class="ts-detail">${escapeHtml(inputText)}</div>` : ''}
+                                </div>
+                            </div>`;
+                    } else if (step.type === 'tool_result') {
+                        const outputText = step.output || step.detail || '';
+                        html += `
+                            <div class="ts tr">
+                                <div class="ts-icon">📋</div>
+                                <div class="ts-body">
+                                    <div class="ts-lbl lbl-tr">Tool Result</div>
+                                    ${outputText ? `<div class="ts-detail">${escapeHtml(outputText)}</div>` : '<div class="ts-detail" style="color:var(--text3);font-style:italic;">(empty result)</div>'}
+                                </div>
+                            </div>`;
+                    } else if (step.type === 'assistant_text' || step.type === 'text') {
+                        const textContent = step.text || step.detail || '';
+                        html += `
+                            <div class="ts at">
+                                <div class="ts-icon">💭</div>
+                                <div class="ts-body">
+                                    <div class="ts-lbl lbl-at">Assistant</div>
+                                    ${textContent ? `<div class="ts-detail">${escapeHtml(textContent)}</div>` : ''}
+                                </div>
+                            </div>`;
+                    }
+                });
+                html += `</div>`;
+            }
+
+            if (p.response) {
+                html += `<div class="modal-section-title" style="margin-top:16px;">Final Response</div>`;
+                html += `<div class="modal-prompt">${escapeHtml(p.response)}</div>`;
+            }
+
+            body.innerHTML = html;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget && !event.target.classList.contains('modal-close')) return;
+            document.getElementById('promptModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        /* ═══════════ CHART ═══════════ */
+        async function loadChart() {
+            try {
+                const r = await fetch('/api/claude-monitor/timeline');
+                const d = await r.json();
+                const timeline = d.timeline || d || [];
+                if (!timeline.length) return;
+
+                const ctx = document.getElementById('tokenChart').getContext('2d');
+                if (tokenChart) tokenChart.destroy();
+
+                tokenChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: timeline.map(t => formatTime(t.timestamp)),
+                        datasets: [
+                            { label:'Input', data:timeline.map(t=>t.input_tokens), backgroundColor:'rgba(59,130,246,0.6)', borderRadius:3 },
+                            { label:'Output', data:timeline.map(t=>t.output_tokens), backgroundColor:'rgba(139,92,246,0.6)', borderRadius:3 },
+                            { label:'Cache Read', data:timeline.map(t=>t.cache_read_tokens), backgroundColor:'rgba(16,185,129,0.6)', borderRadius:3 },
+                            { label:'Cache Write (5m)', data:timeline.map(t=>t.cache_write_5m_tokens||0), backgroundColor:'rgba(245,158,11,0.6)', borderRadius:3 },
+                            { label:'Cache Write (1h)', data:timeline.map(t=>t.cache_write_1h_tokens||0), backgroundColor:'rgba(239,68,68,0.6)', borderRadius:3 },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode:'index', intersect:false },
+                        plugins: {
+                            legend: { labels:{ color:'#9494ad', boxWidth:10, font:{size:11} } },
+                            tooltip: { backgroundColor:'#1c1c28', borderColor:'#252535', borderWidth:1, titleColor:'#eaeaf0', bodyColor:'#9494ad' }
+                        },
+                        scales: {
+                            x: { stacked:true, ticks:{color:'#555570',font:{size:10},maxRotation:45}, grid:{display:false} },
+                            y: { stacked:true, ticks:{color:'#555570',font:{size:10},callback:v=>formatTokens(v)}, grid:{color:'rgba(255,255,255,0.03)'} }
+                        }
+                    }
+                });
+            } catch(e) { console.error('loadChart:', e); }
+        }
+
+/* ═══════════ UTILITIES ═══════════ */
+        function formatNumber(n) {
+            if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+            return n.toString();
+        }
+        function formatTokens(n) {
+            if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+            return n.toString();
+        }
+        function formatTime(ts) {
+            if (!ts) return '';
+            try {
+                const d = new Date(ts);
+                return d.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            } catch(e) { return ts; }
+        }
+        function escapeHtml(text) {
+            if (!text) return '';
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+    </script>
+</body>
+</html>

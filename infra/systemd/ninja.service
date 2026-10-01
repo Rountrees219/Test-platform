@@ -1,0 +1,27 @@
+[Unit]
+Description=Ninja Browser Automation Agent
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target supervisor.service
+Wants=supervisor.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja
+ExecStartPre=/usr/local/bin/python browser/browser_server.py ensure
+ExecStart=/usr/local/bin/python processes/orchestrator.py
+Restart=on-failure
+RestartSec=30s
+
+Environment=HOME=/root
+Environment=DISPLAY=:99
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+# orchestrator.py owns its own log file: /workspace/logs/ninja_YYYY-MM-DD.log
+# systemd captures any pre-logging stdout/stderr (import errors, claude-wrapper
+# bleed-through) into the journal — view with: journalctl -u ninja -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ninja
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=Ninja Agent Dashboard
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target supervisor.service ninja.service
+Wants=ninja.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja/dashboard
+ExecStart=/usr/local/bin/python app.py
+Restart=on-failure
+RestartSec=10s
+
+Environment=HOME=/root
+Environment=DASHBOARD_PORT=9000
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+StandardOutput=append:/workspace/logs/ninja-dashboard.log
+StandardError=append:/workspace/logs/ninja-dashboard.log
+SyslogIdentifier=ninja-dashboard
+
+[Install]
+WantedBy=multi-user.target

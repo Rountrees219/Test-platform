@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja — WhatsApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0b12;
+            --card: #16161f;
+            --terminal: #0d0d14;
+            --text: #eaeaf0;
+            --text2: #9494ad;
+            --text3: #555570;
+            --border: #252535;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --green: #10b981;
+            --orange: #f59e0b;
+            --red: #ef4444;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+        .hdr {
+            display: flex; align-items: center; gap: 16px;
+            padding: 18px 22px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 14px;
+            margin-bottom: 20px;
+        }
+        .hdr-title { font-size: 20px; font-weight: 700; }
+        .hdr-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .badge {
+            font-size: 11px; padding: 3px 10px; border-radius: 20px;
+            border: 1px solid var(--border); color: var(--text2);
+            background: rgba(255,255,255,0.02); margin-left: auto;
+        }
+        .grid { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+        @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+        }
+        .card h2 {
+            font-size: 14px; font-weight: 600; color: var(--text2);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 14px;
+        }
+        .state {
+            display: inline-block; padding: 4px 10px; border-radius: 999px;
+            font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+        }
+        .state-bound { background: rgba(16,185,129,0.12); color: var(--green); border:1px solid rgba(16,185,129,0.4); }
+        .state-pairing { background: rgba(245,158,11,0.12); color: var(--orange); border:1px solid rgba(245,158,11,0.4); }
+        .state-qr { background: rgba(59,130,246,0.12); color: var(--blue); border:1px solid rgba(59,130,246,0.4); }
+        .state-other { background: rgba(149,149,173,0.12); color: var(--text2); border:1px solid var(--border); }
+        .qr-wrap {
+            display: flex; align-items: center; justify-content: center;
+            background: var(--terminal); border-radius: 12px;
+            padding: 16px; min-height: 260px;
+        }
+        .qr-wrap img { width: 240px; height: 240px; image-rendering: pixelated; background: #fff; padding: 8px; border-radius: 6px; cursor: pointer; transition: transform 0.1s; }
+        .qr-wrap img:hover { transform: scale(1.02); }
+        .qr-wrap img:active { transform: scale(0.98); }
+        .qr-wrap { position: relative; }
+        .qr-toast {
+            position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+            background: rgba(16,185,129,0.95); color: #fff; font-size: 12px;
+            padding: 6px 12px; border-radius: 6px; pointer-events: none;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .qr-toast.show { opacity: 1; }
+        .qr-empty { color: var(--text3); font-size: 13px; text-align: center; }
+        .pair-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 32px; letter-spacing: 6px; font-weight: 700;
+            text-align: center; padding: 18px 0;
+            background: var(--terminal); border-radius: 10px;
+            border: 1px dashed var(--border);
+        }
+        .pair-hint { color: var(--text2); font-size: 12px; margin-top: 10px; line-height: 1.6; }
+        .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; font-size: 13px; }
+        .kv dt { color: var(--text2); }
+        .kv dd { color: var(--text); font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+        .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        button {
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            padding: 8px 14px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--terminal);
+            color: var(--text); cursor: pointer;
+        }
+        button:hover { border-color: var(--purple); }
+        button.danger { color: var(--red); border-color: rgba(239,68,68,0.4); }
+        button.danger:hover { border-color: var(--red); }
+        .safety {
+            margin-top: 20px; padding: 16px 18px;
+            background: rgba(245,158,11,0.05);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 12px;
+            font-size: 13px; line-height: 1.6; color: var(--text);
+        }
+        .safety strong { color: var(--orange); }
+        .err { color: var(--red); font-size: 12px; margin-top: 8px; }
+        .ok  { color: var(--green); font-size: 12px; margin-top: 8px; }
+        .spinner {
+            display: inline-block; width: 10px; height: 10px;
+            border: 2px solid currentColor; border-right-color: transparent;
+            border-radius: 50%; vertical-align: -1px; margin-right: 6px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom: 12px; }
+        .row label { font-size:12px; color: var(--text2); text-transform: uppercase; letter-spacing:0.04em; }
+        select {
+            font-family: inherit; font-size: 13px; padding: 7px 10px;
+            background: var(--terminal); color: var(--text);
+            border:1px solid var(--border); border-radius:8px;
+        }
+        select:focus { outline: none; border-color: var(--purple); }
+        .countdown { font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--text2); }
+        .fail-banner {
+            margin-top: 12px; padding: 12px 14px;
+            background: rgba(239,68,68,0.08);
+            border:1px solid rgba(239,68,68,0.4); border-radius: 10px;
+            font-size: 13px; color: var(--text);
+        }
+        .fail-banner strong { color: var(--red); }
+        .invite-link {
+            margin-top: 12px; padding: 12px 14px;
+            background: var(--terminal); border:1px solid var(--border);
+            border-radius: 10px; font-size: 13px;
+            display: flex; gap: 10px; align-items: center; justify-content: space-between;
+        }
+        .invite-link a { color: var(--blue); text-decoration: none; word-break: break-all; }
+        .invite-link a:hover { text-decoration: underline; }
+        .warn { color: var(--orange); font-size: 12px; }
+        .state-awaiting { background: rgba(139,92,246,0.12); color: var(--purple); border:1px solid rgba(139,92,246,0.4); }
+        .state-creating { background: rgba(59,130,246,0.12); color: var(--blue); border:1px solid rgba(59,130,246,0.4); }
+        .state-failed { background: rgba(239,68,68,0.12); color: var(--red); border:1px solid rgba(239,68,68,0.4); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hdr">
+        <div>
+            <div class="hdr-title">🥷 Ninja — WhatsApp Control</div>
+            <div class="hdr-sub">Single-chat binding · Auto-group (default) · pairing-code optional</div>
+        </div>
+        <span class="badge" id="mode-badge">mode: {{ mode }}</span>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Connection</h2>
+            <div style="margin-bottom: 14px;">
+                <span class="state state-other" id="ninja-state">loading…</span>
+            </div>
+            <dl class="kv">
+                <dt>connection</dt><dd id="connection">—</dd>
+                <dt>bound chat</dt><dd id="bound-chat">—</dd>
+                <dt>bound via</dt><dd id="bound-via">—</dd>
+                <dt>bound at</dt><dd id="bound-at">—</dd>
+                <dt>inbox size</dt><dd id="inbox-size">—</dd>
+                <dt>last seq</dt><dd id="last-seq">—</dd>
+            </dl>
+            <div class="row" style="margin-top: 14px;">
+                <label for="bind-method">Bind method</label>
+                <select id="bind-method">
+                    <option value="auto_group">Auto-create 🥷 Ninja group (default)</option>
+                    <option value="pairing_code">Pairing code (send code to a chat)</option>
+                </select>
+                <span class="countdown" id="bind-countdown"></span>
+            </div>
+            <div class="actions">
+                <button id="unlink-btn" class="danger">Unlink account</button>
+                <button id="bind-btn">Bind</button>
+                <button id="unbind-btn" class="danger">Unbind</button>
+                <button id="refresh-btn">Refresh</button>
+            </div>
+            <div id="conn-msg"></div>
+        </div>
+
+        <div class="card">
+            <h2>Pair</h2>
+            <div id="pair-area">
+                <div class="qr-wrap" id="qr-wrap">
+                    <img id="qr-img" hidden alt="QR — click to copy" title="Click to copy QR string"
+                        onclick="copyQrToClipboard()">
+                    <div id="qr-placeholder" class="qr-empty">No QR available.</div>
+                </div>
+                <div id="pair-code-block" style="margin-top: 14px; display: none;">
+                    <div class="pair-code" id="pair-code">······</div>
+                    <div class="pair-hint" id="pair-hint">
+                        Send this code as a WhatsApp message from the chat you want Ninja to bind to.
+                    </div>
+                </div>
+                <div id="invite-link-block" class="invite-link" style="display:none;">
+                    <span>Invite link: <a id="invite-link-a" href="#" target="_blank" rel="noopener"></a></span>
+                    <button id="copy-invite-btn">Copy</button>
+                </div>
+                <div id="fail-banner" class="fail-banner" style="display:none;">
+                    <strong>Auto-group failed.</strong>
+                    <div id="fail-detail" style="margin-top:6px; font-family:'JetBrains Mono', monospace; font-size:12px;"></div>
+                    <div class="actions">
+                        <button id="retry-bind-btn">Retry</button>
+                    </div>
+                </div>
+            </div>
+            <div class="actions" id="get-code-actions" style="display: none;">
+                <button id="get-code-btn">Get pairing code</button>
+            </div>
+            <div id="pair-msg"></div>
+        </div>
+    </div>
+
+    <div class="safety">
+        <strong>Safety.</strong> Ninja replies to <em>one</em> WhatsApp chat at a time and prefixes every
+        outbound message with <code>🥷 Ninja:</code>. Messages from any other JID are dropped at the gateway
+        (counted as <code>dropped_not_bound_chat</code>). To switch chats, click <em>Unbind</em> and re-pair.
+    </div>
+</div>
+
+<script>
+function setText(id, val) { document.getElementById(id).textContent = val ?? "—"; }
+
+const STATE_CLASS = {
+    "bound": "state-bound",
+    "waiting_for_chat_pairing": "state-pairing",
+    "waiting_for_qr": "state-qr",
+    "connected": "state-qr",
+    "awaiting_bind_method": "state-awaiting",
+    "creating_group": "state-creating",
+    "auto_group_failed": "state-failed",
+};
+
+function applyStateBadge(state) {
+    const el = document.getElementById("ninja-state");
+    el.textContent = state || "unknown";
+    el.className = "state " + (STATE_CLASS[state] || "state-other");
+}
+
+// Suppress dashboard-driven updates of the dropdown while operator is
+// actively interacting with it (we just sent a POST that hasn't echoed).
+let dropdownLocked = false;
+let pollTimer = null;
+let lastQrFingerprint = null;
+let qrBlobUrl = null;
+let statusFailStreak = 0;
+
+async function maybeFetchQr(fingerprint) {
+    if (!fingerprint || fingerprint === lastQrFingerprint) return;
+    try {
+        const r = await fetch("/api/whatsapp/qr");
+        if (!r.ok) return;
+        const blob = await r.blob();
+        if (qrBlobUrl) URL.revokeObjectURL(qrBlobUrl);
+        qrBlobUrl = URL.createObjectURL(blob);
+        document.getElementById("qr-img").src = qrBlobUrl;
+        lastQrFingerprint = fingerprint;
+    } catch {}
+}
+
+function showQrPlaceholder(text, html) {
+    const img = document.getElementById("qr-img");
+    const ph = document.getElementById("qr-placeholder");
+    if (html) ph.innerHTML = text;
+    else ph.textContent = text;
+    ph.hidden = false;
+    img.hidden = true;
+}
+
+// --- Transient status tracking ---------------------------------------------
+// `pendingOp` is set when the operator clicks an action button; refresh()
+// auto-clears the conn-msg when the op's terminal condition is observed.
+// `prevConn` lets us surface a brief "Linked." after a successful pairing.
+let pendingOp = null; // { kind: "unlink" | "unbind", startedAt, startConn }
+let prevConn = null;
+let linkedToastUntil = 0;
+let unlinkedToastUntil = 0;
+
+function setTransient(html) {
+    document.getElementById("conn-msg").innerHTML = html;
+}
+function clearTransient() {
+    const m = document.getElementById("conn-msg");
+    if (m.querySelector(".transient")) m.innerHTML = "";
+}
+function pendingDone(op, j) {
+    if (!op) return true;
+    if (op.kind === "unlink") {
+        // MUST require state to leave op.startConn — otherwise "done" fires on
+        // the first poll before logout lands, clearing the spinner instantly.
+        if (op.startConn && j.connection === op.startConn) return false;
+        return j.connection === "qr" || j.connection === "connecting"
+            || j.connection === "open" || j.connection === "logged_out";
+    }
+    if (op.kind === "unbind") {
+        return !j.bound_chat_jid;
+    }
+    return true;
+}
+
+async function refresh() {
+    try {
+        const r = await fetch("/api/whatsapp/status");
+        const j = await r.json();
+        statusFailStreak = 0;
+        const msg = document.getElementById("conn-msg");
+        if (msg.querySelector(".status-err")) msg.innerHTML = "";
+
+        // --- Transient status orchestration ---------------------------------
+        // 1. If a user-initiated op is pending, clear it when its terminal
+        //    condition is observed (avoids stale "Unlinking…" / "Unbinding…").
+        if (pendingOp && pendingDone(pendingOp, j)) {
+            const finishedKind = pendingOp.kind;
+            pendingOp = null;
+            if (finishedKind === "unlink") {
+                setTransient('<div class="ok transient">✓ Unlinked. Choose bind method and pair a new device.</div>');
+                unlinkedToastUntil = Date.now() + 3500;
+            } else {
+                clearTransient();
+            }
+        }
+        // 2. If nothing pending, surface passive linking phases.
+        if (!pendingOp) {
+            const now = Date.now();
+            if (unlinkedToastUntil && now < unlinkedToastUntil) {
+                // Hold the unlinked flash — linking transient would overwrite it.
+            } else if (unlinkedToastUntil && now >= unlinkedToastUntil) {
+                unlinkedToastUntil = 0;
+                clearTransient();
+            } else if (j.connection === "connecting") {
+                // "Linking" only for first-time pair; bound session = reconnect.
+                const verb = j.bound_chat_jid
+                    ? "Reconnecting to WhatsApp…"
+                    : "Linking — establishing session…";
+                setTransient('<div class="ok transient"><span class="spinner"></span>' + verb + '</div>');
+            } else if (j.connection === "open" && prevConn && prevConn !== "open") {
+                setTransient('<div class="ok transient">Linked.</div>');
+                linkedToastUntil = now + 2500;
+            } else if (linkedToastUntil && now >= linkedToastUntil) {
+                linkedToastUntil = 0;
+                clearTransient();
+            } else if (j.connection !== "connecting" && !linkedToastUntil) {
+                clearTransient();
+            }
+        }
+        prevConn = j.connection;
+        setText("connection", j.connection || "—");
+        setText("bound-chat", j.bound_chat_jid || "(unbound)");
+        setText("bound-via", j.bound_via || "—");
+        setText("bound-at", j.bound_at || "—");
+        setText("inbox-size", String(j.inbox_size ?? "—"));
+        setText("last-seq", String(j.last_seq ?? "—"));
+        applyStateBadge(j.ninja_state);
+
+        const sel = document.getElementById("bind-method");
+        if (!dropdownLocked && j.bind_method) sel.value = j.bind_method;
+        const isLinked = j.connection === "open";
+        // bound_chat_jid stays in bindStore even when account needs re-link.
+        // Only treat as bound while the socket is healthy enough to use it.
+        const isBound = !!j.bound_chat_jid && (isLinked || j.connection === "connecting");
+        sel.disabled = isBound || j.ninja_state === "creating_group";
+
+        const bindBtn = document.getElementById("bind-btn");
+        const unbindBtn = document.getElementById("unbind-btn");
+        const unlinkBtn = document.getElementById("unlink-btn");
+        bindBtn.style.display = (isLinked && !isBound) ? "" : "none";
+        bindBtn.disabled = j.ninja_state === "creating_group";
+        unbindBtn.style.display = isBound ? "" : "none";
+        // qr is shown ONLY when bindStore is stale (qr+bound). Post-unlink qr
+        // means clean re-pair flow — nothing left to unlink.
+        const canUnlink = isLinked
+            || j.connection === "logged_out"
+            || (j.connection === "qr" && !!j.bound_chat_jid);
+        unlinkBtn.style.display = canUnlink ? "" : "none";
+        unlinkBtn.textContent = (j.connection === "logged_out") ? "Force re-pair" : "Unlink account";
+
+        const cd = document.getElementById("bind-countdown");
+        if (j.ninja_state === "awaiting_bind_method" && j.grace_remaining_ms > 0) {
+            cd.textContent = "fires in " + Math.ceil(j.grace_remaining_ms / 1000) + "s";
+        } else if (j.ninja_state === "awaiting_bind_method" && !j.last_active_method) {
+            cd.textContent = "choose a method to continue";
+        } else {
+            cd.textContent = "";
+        }
+
+        const qrImg = document.getElementById("qr-img");
+        const qrPh = document.getElementById("qr-placeholder");
+        // bind_method only matters once state=open — account-link comes first.
+        const showQr = !(j.bound_chat_jid && isLinked) && j.connection !== "open"
+            && j.ninja_state !== "creating_group";
+        const showPairPrompt = !isBound && j.connection === "open" && j.bind_method === "pairing_code";
+        if (showPairPrompt) {
+            lastQrFingerprint = null;
+            showQrPlaceholder("Pair-code mode — click <strong>Get pairing code</strong> below.", true);
+        } else if (showQr) {
+            await maybeFetchQr(j.qr_fingerprint);
+            if (qrBlobUrl) {
+                qrImg.hidden = false;
+                qrPh.hidden = true;
+            } else {
+                showQrPlaceholder("Waiting for QR…");
+            }
+        } else if (j.bound_chat_jid && isLinked) {
+            lastQrFingerprint = null;
+            showQrPlaceholder("Bound — no QR needed.");
+        } else if (j.ninja_state === "creating_group") {
+            lastQrFingerprint = null;
+            showQrPlaceholder("Creating " + (j.auto_group_name || "🥷 Ninja") + "…");
+        } else {
+            lastQrFingerprint = null;
+            showQrPlaceholder("Session open — no QR.");
+        }
+
+        const getCodeActions = document.getElementById("get-code-actions");
+        getCodeActions.style.display =
+            (j.bind_method === "pairing_code" && isLinked && !isBound) ? "" : "none";
+
+        // Force-hide once bound — gateway may still report pairing_code_active
+        // from the pre-bind moment, but the code is no longer relevant.
+        const pairBlock = document.getElementById("pair-code-block");
+        if (isBound) {
+            pairBlock.style.display = "none";
+        } else if (j.pairing_code_active) {
+            pairBlock.style.display = "block";
+            if (j.pairing_code_expires_at) {
+                document.getElementById("pair-hint").textContent =
+                    "Active — expires at " + j.pairing_code_expires_at + ". Fetch to view the code.";
+            }
+        } else {
+            pairBlock.style.display = "none";
+        }
+
+        // Failure banner
+        const fail = document.getElementById("fail-banner");
+        if (j.ninja_state === "auto_group_failed") {
+            fail.style.display = "block";
+            document.getElementById("fail-detail").textContent = j.last_error || "unknown error";
+        } else {
+            fail.style.display = "none";
+        }
+
+        // Invite link (only for auto_group bound state)
+        const inviteBlock = document.getElementById("invite-link-block");
+        if (isBound && j.bound_via === "auto_group") {
+            inviteBlock.style.display = "flex";
+            const a = document.getElementById("invite-link-a");
+            if (j.invite_code) {
+                const url = "https://chat.whatsapp.com/" + j.invite_code;
+                a.href = url;
+                a.textContent = url;
+                a.dataset.code = j.invite_code;
+            } else {
+                a.removeAttribute("href");
+                a.textContent = "(invite link unavailable — retry)";
+                a.className = "warn";
+                a.dataset.code = "";
+            }
+        } else {
+            inviteBlock.style.display = "none";
+        }
+
+        // Tighten poll cadence while waiting; relax once bound.
+        const wantedInterval = isBound ? 5000 : 1000;
+        if (pollTimer && pollTimer.interval !== wantedInterval) {
+            clearInterval(pollTimer.handle);
+            pollTimer = null;
+        }
+        if (!pollTimer) {
+            const handle = setInterval(refresh, wantedInterval);
+            pollTimer = { handle, interval: wantedInterval };
+        }
+    } catch (e) {
+        statusFailStreak += 1;
+        if (statusFailStreak >= 2) {
+            document.getElementById("conn-msg").innerHTML =
+                '<div class="err status-err">status fetch failed (' + statusFailStreak + '×): ' + e + '</div>';
+        }
+    }
+}
+
+async function setBindMethod(method) {
+    document.getElementById("pair-msg").innerHTML = "";
+    dropdownLocked = true;
+    try {
+        const r = await fetch("/api/whatsapp/bind_method", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ method }),
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+            document.getElementById("pair-msg").innerHTML =
+                '<div class="err">' + (j.error || "set bind_method failed") + '</div>';
+        }
+    } catch (e) {
+        document.getElementById("pair-msg").innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        // Release the lock after one poll cycle so server is authoritative again.
+        setTimeout(() => { dropdownLocked = false; }, 1500);
+        refresh();
+    }
+}
+
+async function copyQrToClipboard() {
+    const toast = document.getElementById("qr-toast");
+    try {
+        const r = await fetch("/api/whatsapp/qr?format=text&ts=" + Date.now());
+        if (!r.ok) throw new Error("QR not available");
+        const text = (await r.text()).trim();
+        if (!text) throw new Error("empty QR");
+        await navigator.clipboard.writeText(text);
+        if (toast) { toast.textContent = "Copied!"; toast.classList.add("show"); }
+    } catch (e) {
+        if (toast) { toast.textContent = "Copy failed"; toast.classList.add("show"); }
+    } finally {
+        if (toast) setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+}
+
+async function bindNow() {
+    document.getElementById("conn-msg").innerHTML = "";
+    try {
+        const r = await fetch("/api/whatsapp/bind_now", { method: "POST" });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+            document.getElementById("conn-msg").innerHTML =
+                '<div class="err">' + (j.error || "bind failed") + (j.detail ? ': ' + j.detail : '') + '</div>';
+        } else if (j.method === "pairing_code") {
+            // Surface the freshly-issued code without requiring a second click.
+            await getPairingCode();
+        }
+    } catch (e) {
+        document.getElementById("conn-msg").innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        refresh();
+    }
+}
+
+async function unlinkAccount() {
+    if (!confirm("Unlink this WhatsApp account from Ninja? You'll need to scan a QR with a different phone to re-link.")) return;
+    pendingOp = {
+        kind: "unlink",
+        startedAt: Date.now(),
+        startConn: prevConn,  // pendingDone checks against this; bare "open" match clears spinner too early
+    };
+    const unlinkBtn = document.getElementById("unlink-btn");
+    unlinkBtn.disabled = true;
+    setTransient('<div class="ok transient"><span class="spinner"></span>Unlinking — fresh QR will appear shortly…</div>');
+    try {
+        const r = await fetch("/api/whatsapp/unlink", { method: "POST" });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+            pendingOp = null;
+            document.getElementById("conn-msg").innerHTML =
+                '<div class="err">' + (j.error || "unlink failed") + (j.detail ? ': ' + j.detail : '') + '</div>';
+        }
+    } catch (e) {
+        pendingOp = null;
+        document.getElementById("conn-msg").innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        unlinkBtn.disabled = false;
+        refresh();
+    }
+}
+
+async function retryBind() {
+    try {
+        const r = await fetch("/api/whatsapp/retry_bind", { method: "POST" });
+        const j = await r.json();
+        if (!r.ok || !j.ok) {
+            document.getElementById("pair-msg").innerHTML =
+                '<div class="err">' + (j.error || "retry failed") + '</div>';
+        }
+    } catch (e) {
+        document.getElementById("pair-msg").innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        refresh();
+    }
+}
+
+function copyInvite() {
+    const a = document.getElementById("invite-link-a");
+    if (!a.dataset.code) return;
+    const url = "https://chat.whatsapp.com/" + a.dataset.code;
+    navigator.clipboard?.writeText(url).then(() => {
+        document.getElementById("pair-msg").innerHTML = '<div class="ok">Invite link copied.</div>';
+    });
+}
+
+function displayPairingCode(j) {
+    document.getElementById("pair-code-block").style.display = "block";
+    document.getElementById("pair-code").textContent = j.code;
+    if (j.expires_at) {
+        document.getElementById("pair-hint").textContent =
+            "Send this code from the chat you want to bind. Expires at " + j.expires_at + ".";
+    }
+}
+
+async function getPairingCode() {
+    const pairMsg = document.getElementById("pair-msg");
+    const btn = document.getElementById("get-code-btn");
+    pairMsg.innerHTML = "";
+    btn.disabled = true;
+    try {
+        // /bind_now 409s when state != open. Account-link via QR comes first.
+        const sr = await fetch("/api/whatsapp/status");
+        const sj = await sr.json();
+        if (sj.connection !== "open") {
+            pairMsg.innerHTML = '<div class="err">Link the WhatsApp account first — scan the QR above. Pair-code mode binds a chat AFTER the account is linked.</div>';
+            return;
+        }
+
+        let r = await fetch("/api/whatsapp/pairing_code");
+        let j = await r.json();
+        if (j.code) { displayPairingCode(j); return; }
+
+        pairMsg.innerHTML = '<div class="ok"><span class="spinner"></span>Requesting pairing code…</div>';
+        const br = await fetch("/api/whatsapp/bind_now", { method: "POST" });
+        const bj = await br.json();
+        if (!br.ok || !bj.ok) {
+            pairMsg.innerHTML = '<div class="err">' + (bj.error || "bind_now failed") + (bj.detail ? ': ' + bj.detail : '') + '</div>';
+            return;
+        }
+        r = await fetch("/api/whatsapp/pairing_code");
+        j = await r.json();
+        if (j.code) {
+            displayPairingCode(j);
+            pairMsg.innerHTML = "";
+        } else {
+            pairMsg.innerHTML = '<div class="err">' + (j.error || "no code yet — try again in a moment") + '</div>';
+        }
+    } catch (e) {
+        pairMsg.innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        btn.disabled = false;
+        refresh();
+    }
+}
+
+async function unbind() {
+    if (!confirm("Unbind the current WhatsApp chat? Ninja will stop replying until rebound.")) return;
+    pendingOp = { kind: "unbind", startedAt: Date.now() };
+    setTransient('<div class="ok transient">Unbinding — chat will detach shortly.</div>');
+    try {
+        const r = await fetch("/api/whatsapp/unbind", { method: "POST" });
+        const j = await r.json();
+        if (!r.ok || !(j.ok || j.success)) {
+            pendingOp = null;
+            document.getElementById("conn-msg").innerHTML =
+                '<div class="err">' + (j.error || "unbind failed") + (j.detail ? ': ' + j.detail : '') + '</div>';
+        }
+    } catch (e) {
+        pendingOp = null;
+        document.getElementById("conn-msg").innerHTML = '<div class="err">' + e + '</div>';
+    } finally {
+        refresh();
+    }
+}
+
+document.getElementById("refresh-btn").addEventListener("click", refresh);
+document.getElementById("bind-btn").addEventListener("click", bindNow);
+document.getElementById("unbind-btn").addEventListener("click", unbind);
+document.getElementById("unlink-btn").addEventListener("click", unlinkAccount);
+document.getElementById("get-code-btn").addEventListener("click", getPairingCode);
+document.getElementById("bind-method").addEventListener("change", (e) => setBindMethod(e.target.value));
+document.getElementById("retry-bind-btn").addEventListener("click", retryBind);
+document.getElementById("copy-invite-btn").addEventListener("click", copyInvite);
+refresh();
+</script>
+</body>
+</html>

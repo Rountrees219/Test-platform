@@ -1,43 +1,46 @@
+# Runtime state files (not tracked)
+.orchestrator.lock
+.cycle_count
+.browser_server.pid
+.session_alert
+monitor_step_count.json
+cycle_state.json
+cycle_issue_permit
+.upgrade/
+live_progress.json
+live_progress_steps.jsonl
+
+# Sensitive files
+settings.json
+codex_settings.json
+.env*
+services/whatsapp/memory/
+
+# Browser data
+**/browser_data/
+**/sessions/_tmp_cookies.db
+# Volatile browsr runtime files
+**/Singleton*
+browser/**/*-wal
+browser/**/*-shm
+
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-.env
-*.egg-info/
-dist/
-build/
-.eggs/
-.venv/
-venv/
-env/
-.pytest_cache/
-.mypy_cache/
-.coverage
-htmlcov/
-
-# Database (don't commit SQLite DB to git)
-*.db
-*.sqlite3
-
-# Node.js
-node_modules/
-npm-debug.log*
-
-# Vite build output
-frontend/dist/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
-# Docker
-.docker/
 
 # Logs
 *.log
-logs/
+**/logs/
+
+# OS
+.DS_Store
+
+# ignore the system prompt files created for agent from MD
+system_prompt.txt
+system_prompt_*.txt
+
+# ignore the codex skills
+.codex/*
+
+# Machine-local / runtime state
+.config

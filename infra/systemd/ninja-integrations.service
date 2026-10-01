@@ -1,0 +1,23 @@
+[Unit]
+Description=Ninja Integrations Dashboard
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target supervisor.service ninja.service
+Wants=ninja.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja/dashboard
+ExecStart=/usr/local/bin/python integrations_app.py
+Restart=on-failure
+RestartSec=10s
+
+Environment=HOME=/root
+Environment=INTEGRATIONS_PORT=9020
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+StandardOutput=append:/workspace/logs/ninja-integrations.log
+StandardError=append:/workspace/logs/ninja-integrations.log
+SyslogIdentifier=ninja-integrations
+
+[Install]
+WantedBy=multi-user.target

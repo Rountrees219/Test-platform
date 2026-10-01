@@ -1,0 +1,13 @@
+# Bounds /workspace/logs/*.log, which the systemd units and ninja.log's
+# FileHandler append to without rotating on their own. `copytruncate` is
+# required: those writers hold the fd open, so the file must be truncated in
+# place rather than renamed.
+/workspace/logs/*.log {
+    daily
+    rotate 5
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}

@@ -1,0 +1,25 @@
+[Unit]
+Description=Ninja Queued-Ack Watcher (WhatsApp)
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target ninja-whatsapp-gateway.service
+Wants=ninja-whatsapp-gateway.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja
+ExecStartPre=/bin/bash -c 'until [ -f /workspace/ninja/services/whatsapp/queued_ack.py ]; do sleep 1; done'
+ExecStart=/usr/local/bin/python services/whatsapp/queued_ack.py
+Restart=always
+RestartSec=15s
+
+Environment=HOME=/root
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+Environment=MESSAGING_CHANNEL=whatsapp
+EnvironmentFile=-/workspace/ninja/.env
+StandardOutput=append:/workspace/logs/ninja-queued-ack.log
+StandardError=append:/workspace/logs/ninja-queued-ack.log
+SyslogIdentifier=ninja-queued-ack
+
+[Install]
+WantedBy=multi-user.target

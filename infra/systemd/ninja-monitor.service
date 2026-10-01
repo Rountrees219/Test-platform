@@ -1,0 +1,24 @@
+[Unit]
+Description=Ninja Slack Monitor
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target supervisor.service
+Wants=supervisor.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/local/bin/python processes/monitor.py
+Restart=always
+RestartSec=30s
+
+Environment=HOME=/root
+Environment=DISPLAY=:99
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+StandardOutput=append:/workspace/logs/ninja-monitor.log
+StandardError=append:/workspace/logs/ninja-monitor.log
+SyslogIdentifier=ninja-monitor
+
+[Install]
+WantedBy=multi-user.target

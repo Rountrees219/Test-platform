@@ -1,0 +1,41 @@
+[Unit]
+Description=Remove superninja config and sync /workspace/ninja to git
+Documentation=https://github.com/NinjaTech-AI/phantom
+Before=supervisor.service
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=120
+ExecStart=/bin/bash -c '\
+  rm -f /etc/supervisor/conf.d/_superninja_startup.conf /workspace/_superninja_startup.conf && \
+  SUPERVISOR_CONF="/etc/supervisor/conf.d/supervisord.conf" && \
+  if [ -f "$SUPERVISOR_CONF" ]; then \
+    sed -i "s|x11vnc -display :99 -forever -shared -rfbauth /root/.vnc/passwd -rfbport 5901|x11vnc -display :99 -forever -shared -nopw -rfbport 5901|g" "$SUPERVISOR_CONF" && \
+    echo "ninja-sync: VNC password requirement removed"; \
+  fi && \
+  echo "ninja-sync: waiting for /dev/shm/mcp-token..." && \
+  while [ ! -f /dev/shm/mcp-token ]; do sleep 2; done && \
+  echo "ninja-sync: token found, authenticating with GitHub..." && \
+  if [ ! -d /workspace/ninja/.git ]; then echo "ninja-sync: /workspace/ninja not yet cloned, skipping"; exit 0; fi && \
+  cd /workspace/ninja && \
+  if [ ! -f /usr/local/bin/git-askpass.sh ]; then echo "ninja-sync: git-askpass.sh not found, skipping"; exit 0; fi && \
+  export GIT_ASKPASS='/usr/local/bin/git-askpass.sh' && \
+  ( flock -n 9 || { echo "ninja-sync: .ninja-git.lock held (upgrade in progress) — skipping this cycle"; exit 0; }; \
+    git symbolic-ref -q HEAD >/dev/null || { echo "ninja-sync: detached HEAD (no current branch) — skipping this cycle"; exit 0; }; \
+    git -c user.name=ninja -c user.email=ninja@ninjatech.ai add -A && \
+    { git -c user.name=ninja -c user.email=ninja@ninjatech.ai diff --cached --quiet || \
+      git -c user.name=ninja -c user.email=ninja@ninjatech.ai commit -m "ninja-sync: auto-commit workspace changes"; } && \
+    git -c user.name=ninja -c user.email=ninja@ninjatech.ai push \
+  ) 9>/workspace/ninja/.ninja-git.lock'
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ninja-sync
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,75 @@
+# Ninja — Browser Automation Agent Dependencies
+#
+# Runtime deps for the agent host go HERE, not in pyproject.toml.
+# pyproject.toml resolves from the internal CodeArtifact mirror, which
+# does not serve all public PyPI packages. install.sh installs this
+# file with plain pip from public PyPI on the agent host.
+#
+# ---------------------------------------------------------------------------
+# NOT LISTED HERE: ninja-agent-event-cache-client
+# ---------------------------------------------------------------------------
+# The agent-event-cache wire models are copied into
+# clients/agent_event_cache_models.py rather than installed, because that
+# package lives in internal CodeArtifact and this file is pip-installed from
+# public PyPI on a host with no CodeArtifact access. The copy rides along in the
+# source zip and needs nothing but pydantic below.
+#
+# The real package stays a CI-only dependency (pyproject.toml, dev group), where
+# a drift test compares it against the copy. To refresh the copy:
+# scripts/vendor_event_cache_models.sh
+# ---------------------------------------------------------------------------
+
+
+# Cron scheduler (cron_scheduler.py, tools/cron.py — see agent-docs/CRON.md)
+croniter>=2.0.0
+
+# Document skills (.claude/skills/{pdf,docx,pptx} — script imports).
+# Deliberately small-only. Large deps are installed on demand by the agent
+# (see each SKILL.md): markitdown[pptx] ~100MB (onnxruntime+numpy),
+# LibreOffice ~250MB, pandoc ~150MB.
+defusedxml>=0.7.0
+
+# Dashboard (dashboard/app.py)
+flask>=3.0.0
+flask-cors>=4.0.0
+httpx>=0.24.0
+lxml>=4.9.0
+
+# MCP client (utils/mcp.py)
+mcp>=1.28.1,<1.29.0
+
+# OpenAI SDK — client for the LiteLLM gateway (audio transcription, etc.)
+openai>=1.0.0
+pdf2image>=1.16.0
+pdfplumber>=0.11.0
+
+# Browser automation (browser_interface.py)
+playwright>=1.40.0
+
+# PostHog analytics (utils/posthog_client.py)
+posthog>=6.3.2
+
+# Pydantic — models across the agent, and the base of the agent-event-cache
+# wire models (see the REQUIRED note below).
+pydantic>=2.0.0
+pypdf>=4.0.0
+
+# Testing
+pytest>=7.0.0
+
+# Structured JSON logging (core/logging.py imports pythonjsonlogger.json,
+# which only exists in the 3.x+ series).
+python-json-logger>=3.1.0
+
+# Slack messaging & formatting
+requests>=2.28.0
+slackify-markdown>=0.2.0
+
+# Retry / exponential backoff for HTTP service clients
+tenacity>=8.2.0
+
+# Read audio duration from file headers, so per-second tools can be priced
+tinytag>=2.3.1
+
+# Local dev: auto-restart monitor on code changes (watchmedo CLI)
+watchdog>=3.0.0

@@ -1,0 +1,24 @@
+[Unit]
+Description=Ninja WhatsApp Gateway (Baileys)
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja/messaging/whatsapp/gateway
+ExecStartPre=/bin/bash -c 'test -d /workspace/ninja/messaging/whatsapp/gateway && test -e /workspace/ninja/messaging/whatsapp/gateway/node_modules/fastify/package.json && test -f /workspace/ninja/messaging/whatsapp/gateway/dist/server.js'
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/node --enable-source-maps dist/server.js
+Restart=on-failure
+RestartSec=10s
+
+Environment=HOME=/root
+EnvironmentFile=-/workspace/ninja/.env
+StandardOutput=append:/workspace/logs/ninja-whatsapp-gateway.log
+StandardError=append:/workspace/logs/ninja-whatsapp-gateway.log
+SyslogIdentifier=ninja-whatsapp-gateway
+
+[Install]
+WantedBy=multi-user.target

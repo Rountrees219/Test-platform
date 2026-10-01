@@ -1,0 +1,24 @@
+[Unit]
+Description=Ninja Health Service
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target supervisor.service
+Wants=supervisor.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/local/bin/python processes/health_service.py
+Restart=always
+RestartSec=30s
+
+Environment=HOME=/root
+Environment=DISPLAY=:99
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+StandardOutput=append:/workspace/logs/ninja-health.log
+StandardError=append:/workspace/logs/ninja-health.log
+SyslogIdentifier=ninja-health
+
+[Install]
+WantedBy=multi-user.target

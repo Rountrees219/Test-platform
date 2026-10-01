@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""
+pdx — launcher shim.
+
+Finds the Ninja source tree and delegates to `tools.pdx:main`.
+Safe to symlink into /usr/local/bin or ~/.local/bin.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+def _find_ninja_src() -> Path | None:
+    # 1. Explicit override
+    env = os.environ.get("NINJA_SRC")
+    if env and (Path(env) / "tools" / "pdx.py").exists():
+        return Path(env)
+
+    # 2. Walk up from this file (installed inside the repo)
+    here = Path(__file__).resolve()
+    for parent in [here.parent, *here.parents]:
+        if (parent / "tools" / "pdx.py").exists():
+            return parent
+
+    # 3. Common install locations
+    for p in [
+        Path("/workspace/ninja"),
+        Path.home() / "ninja" / "src" / "ninja",
+    ]:
+        if (p / "tools" / "pdx.py").exists():
+            return p
+
+    return None
+
+
+src = _find_ninja_src()
+if src is None:
+    sys.stderr.write(
+        "pdx: could not locate Ninja source tree "
+        "(set NINJA_SRC or install under /workspace/ninja).\n"
+    )
+    sys.exit(2)
+
+sys.path.insert(0, str(src))
+
+from tools.pdx import main  # noqa: E402
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,10 @@
+You were stopped because this task used up the budget for a single monitor turn — either too many steps or too much wall-clock time.
+
+Do exactly these three things, then end your turn:
+1. Create a GitHub issue capturing the remaining work: python tools/issues.py create --title "..." --body "..."
+2. Post a short progress update to the channel, quoting the issue number.
+3. Stop.
+
+Do NOT keep working on this task, and do NOT try to "just finish it quickly" — the background agent owns it now. You are the monitor: every extra minute you spend here is a minute you cannot read or answer anyone else's message, which is the one job only you can do.
+
+If the user asks about this task later — "done?", "are you there?", "any update?" — reply with the issue's current status from `python tools/issues.py list` and say the background agent is still working on it. Never restart the work yourself, not even if the issue is still open, and not even if you believe you could finish it in a moment.

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Team Avatars</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        .agents {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+        .agent-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .agent-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        .agent-card.nova { border-color: rgba(138, 43, 226, 0.5); }
+        .agent-card.pixel { border-color: rgba(255, 20, 147, 0.5); }
+        .agent-card.bolt { border-color: rgba(255, 215, 0, 0.5); }
+        .agent-card.scout { border-color: rgba(50, 205, 50, 0.5); }
+        .agent-card.phantom { border-color: rgba(128, 90, 213, 0.5); }
+        .avatar {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            object-fit: cover;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+        }
+        .agent-card.nova .avatar { border-color: rgba(138, 43, 226, 0.7); }
+        .agent-card.pixel .avatar { border-color: rgba(255, 20, 147, 0.7); }
+        .agent-card.bolt .avatar { border-color: rgba(255, 215, 0, 0.7); }
+        .agent-card.scout .avatar { border-color: rgba(50, 205, 50, 0.7); }
+        .agent-card.phantom .avatar { border-color: rgba(128, 90, 213, 0.7); }
+        .agent-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .agent-card.nova .agent-name { color: #9b59b6; }
+        .agent-card.pixel .agent-name { color: #e91e63; }
+        .agent-card.bolt .agent-name { color: #f1c40f; }
+        .agent-card.scout .agent-name { color: #2ecc71; }
+        .agent-card.phantom .agent-name { color: #805ad5; }
+        .agent-role {
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .agent-emoji {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .agent-card.nova .badge { background: rgba(138, 43, 226, 0.3); color: #9b59b6; }
+        .agent-card.pixel .badge { background: rgba(255, 20, 147, 0.3); color: #e91e63; }
+        .agent-card.bolt .badge { background: rgba(255, 215, 0, 0.3); color: #f1c40f; }
+        .agent-card.scout .badge { background: rgba(50, 205, 50, 0.3); color: #2ecc71; }
+        .agent-card.phantom .badge { background: rgba(128, 90, 213, 0.3); color: #805ad5; }
+        .url-section {
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+        }
+        .url-section h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        .url-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+        .url-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .url-item code {
+            color: #4ecdc4;
+            word-break: break-all;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #666;
+        }
+    </style>
+<script src="https://sites.super.betamyninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Agent Team Avatars</h1>
+        <p class="subtitle">AI Agent Team for Logo Creator Project</p>
+
+        <div class="agents">
+            <div class="agent-card nova">
+                <div class="agent-emoji">🌟</div>
+                <img src="nova.png" alt="Nova" class="avatar">
+                <div class="agent-name">Nova</div>
+                <div class="agent-role">Product Manager</div>
+                <span class="badge">PM</span>
+            </div>
+
+            <div class="agent-card pixel">
+                <div class="agent-emoji">🎨</div>
+                <img src="pixel.png" alt="Pixel" class="avatar">
+                <div class="agent-name">Pixel</div>
+                <div class="agent-role">UX Designer</div>
+                <span class="badge">UX</span>
+            </div>
+
+            <div class="agent-card bolt">
+                <div class="agent-emoji">⚡</div>
+                <img src="bolt.png" alt="Bolt" class="avatar">
+                <div class="agent-name">Bolt</div>
+                <div class="agent-role">Full-Stack Developer</div>
+                <span class="badge">DEV</span>
+            </div>
+
+            <div class="agent-card scout">
+                <div class="agent-emoji">🔍</div>
+                <img src="scout.png" alt="Scout" class="avatar">
+                <div class="agent-name">Scout</div>
+                <div class="agent-role">QA Engineer</div>
+                <span class="badge">QA</span>
+            </div>
+
+            <div class="agent-card phantom">
+                <div class="agent-emoji">👻</div>
+                <img src="phantom.png" alt="Phantom" class="avatar">
+                <div class="agent-name">Phantom</div>
+                <div class="agent-role">Browser Automation Agent</div>
+                <span class="badge">WEB</span>
+            </div>
+        </div>
+
+        <div class="url-section">
+            <h2>📎 Avatar URLs</h2>
+            <div class="url-item">
+                <img src="nova.png" alt="Nova">
+                <code id="nova-url">nova.png</code>
+            </div>
+            <div class="url-item">
+                <img src="pixel.png" alt="Pixel">
+                <code id="pixel-url">pixel.png</code>
+            </div>
+            <div class="url-item">
+                <img src="bolt.png" alt="Bolt">
+                <code id="bolt-url">bolt.png</code>
+            </div>
+            <div class="url-item">
+                <img src="scout.png" alt="Scout">
+                <code id="scout-url">scout.png</code>
+            </div>
+            <div class="url-item">
+                <img src="phantom.png" alt="Phantom">
+                <code id="phantom-url">phantom.png</code>
+            </div>
+        </div>
+
+        <footer>
+            <p>NinjaTech AI - Agent Team Logo Creator</p>
+        </footer>
+    </div>
+</body>
+</html>

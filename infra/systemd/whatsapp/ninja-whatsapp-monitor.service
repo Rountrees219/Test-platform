@@ -1,0 +1,26 @@
+[Unit]
+Description=Ninja WhatsApp Monitor
+Documentation=https://github.com/NinjaTech-AI/phantom
+After=network.target ninja-whatsapp-gateway.service
+Wants=ninja-whatsapp-gateway.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/workspace/ninja
+ExecStartPre=/bin/bash -c 'until [ -f /workspace/ninja/processes/monitor.py ]; do sleep 1; done'
+ExecStart=/usr/local/bin/python processes/monitor.py
+Restart=always
+RestartSec=30s
+
+Environment=HOME=/root
+Environment=DISPLAY=:99
+Environment=PYTHONPATH=/workspace:/workspace/ninja
+Environment=MESSAGING_CHANNEL=whatsapp
+EnvironmentFile=-/workspace/ninja/.env
+StandardOutput=append:/workspace/logs/ninja-whatsapp-monitor.log
+StandardError=append:/workspace/logs/ninja-whatsapp-monitor.log
+SyslogIdentifier=ninja-whatsapp-monitor
+
+[Install]
+WantedBy=multi-user.target

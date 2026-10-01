@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja — Cost Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0b12;
+            --bg2: #111119;
+            --card: #16161f;
+            --text: #eaeaf0;
+            --text2: #9494ad;
+            --text3: #555570;
+            --border: #252535;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --green: #10b981;
+            --orange: #f59e0b;
+            --cyan: #06b6d4;
+            --r: 12px;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse at 15% 10%, rgba(59,130,246,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 85%, rgba(139,92,246,0.05) 0%, transparent 55%);
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; position: relative; z-index: 1; }
+
+        .hdr { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+        .back-link {
+            color: var(--text2); text-decoration: none; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .back-link:hover { color: var(--text); border-color: var(--text3); }
+        .hdr-title { font-size: 22px; font-weight: 700; }
+        .hdr-sub { color: var(--text2); font-size: 13px; margin-left: auto; }
+
+        .summary { display: flex; gap: 12px; margin-bottom: 24px; }
+        .kpi {
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+            padding: 16px 20px; flex: 1;
+        }
+        .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 6px; }
+        .kpi-value { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .kpi-value.green { color: var(--green); }
+        .kpi-value.cyan { color: var(--cyan); }
+        .kpi-value.purple { color: var(--purple); }
+        .kpi-value.orange { color: var(--orange); }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+        .tab-btn {
+            background: none; border: 1px solid var(--border); color: var(--text2);
+            padding: 8px 18px; border-radius: 8px; font-size: 13px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .tab-btn:hover { color: var(--text); border-color: var(--text3); }
+        .tab-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .table-wrap {
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead tr { background: var(--bg2); }
+        th {
+            text-align: left; padding: 12px 16px;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2);
+            border-bottom: 1px solid var(--border);
+        }
+        th.right { text-align: right; }
+        td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .td-date { color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 12px; white-space: nowrap; }
+        .col-date { width: 140px; }
+        .td-task { color: var(--text); max-width: 480px; }
+        .td-task-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
+        .td-model { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--purple); white-space: nowrap; }
+        .td-cost { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; }
+        .td-tokens { text-align: right; color: var(--text2); font-size: 12px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+        .td-num { text-align: right; color: var(--text2); font-size: 12px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+
+        .empty { text-align: center; padding: 48px; color: var(--text3); }
+        .loading { text-align: center; padding: 48px; color: var(--text3); }
+
+        .pagination {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .pg-btn {
+            background: none; border: 1px solid var(--border); color: var(--text2);
+            padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .pg-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--text); }
+        .pg-btn:disabled { opacity: 0.3; cursor: default; }
+        .pg-info { font-size: 12px; color: var(--text2); }
+
+        .limit-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+            padding: 16px 20px; margin-bottom: 24px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .limit-row { display: flex; align-items: baseline; gap: 12px; }
+        .limit-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); width: 112px; flex-shrink: 0; }
+        .limit-meta { font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+        .limit-meta.over { color: #ef4444; }
+        .limit-edit-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .limit-edit-pair { display: flex; align-items: center; gap: 6px; }
+        .limit-edit-label { font-size: 11px; color: var(--text3); }
+        .limit-input {
+            background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+            padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 100px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .limit-input::-webkit-outer-spin-button,
+        .limit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .limit-input[type=number] { -moz-appearance: textfield; }
+        .limit-input:focus { outline: none; border-color: var(--blue); }
+        .limit-save {
+            background: var(--blue); border: none; color: #fff;
+            padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .limit-save:hover { opacity: 0.85; }
+        .limit-unset { color: var(--text3); font-size: 13px; }
+
+        @media (max-width: 640px) {
+            .container { padding: 16px 12px; }
+            .hdr { margin-bottom: 16px; }
+            .hdr-title { font-size: 18px; }
+            .hdr-sub { display: none; }
+
+            .summary { flex-wrap: wrap; }
+            .kpi { flex: 1 1 calc(50% - 6px); }
+            .kpi-value { font-size: 20px; }
+
+            .limit-edit-row { flex-direction: column; align-items: stretch; gap: 6px; }
+            .limit-edit-pair { justify-content: space-between; }
+            .limit-input { width: 120px; }
+            .limit-save { width: 100%; }
+
+            .table-wrap { overflow-x: auto; }
+            .td-task-text { max-width: 180px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hdr">
+        <a class="back-link" href="/">← Dashboard</a>
+        <div class="hdr-title">💰 Cost Analysis</div>
+        <div class="hdr-sub" id="lastUpdated"></div>
+    </div>
+
+    <div class="summary">
+        <div class="kpi">
+            <div class="kpi-label">Total Cost</div>
+            <div class="kpi-value green" id="totalCost">—</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Tasks</div>
+            <div class="kpi-value cyan" id="totalSessions">—</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Avg Cost / Task</div>
+            <div class="kpi-value purple" id="avgCost">—</div>
+        </div>
+    </div>
+
+    <div class="limit-card">
+        <div class="limit-row">
+            <div class="limit-label">Total Limit</div>
+            <div id="limitMeta" class="limit-meta"><span class="limit-unset">No limit set</span></div>
+        </div>
+        <div class="limit-row">
+            <div class="limit-label">Monthly Limit</div>
+            <div id="monthlyMeta" class="limit-meta"><span class="limit-unset">No limit set</span></div>
+        </div>
+        <div class="limit-row">
+            <div class="limit-label">Daily Limit</div>
+            <div id="dailyMeta" class="limit-meta"><span class="limit-unset">No limit set</span></div>
+        </div>
+        <div class="limit-edit-row">
+            <div class="limit-edit-pair">
+                <span class="limit-edit-label">Total</span>
+                <input class="limit-input" type="number" id="limitInput" min="0" step="1" placeholder="e.g. 100">
+            </div>
+            <div class="limit-edit-pair">
+                <span class="limit-edit-label">Monthly</span>
+                <input class="limit-input" type="number" id="monthlyLimitInput" min="0" step="1" placeholder="e.g. 30">
+            </div>
+            <div class="limit-edit-pair">
+                <span class="limit-edit-label">Daily</span>
+                <input class="limit-input" type="number" id="dailyLimitInput" min="0" step="1" placeholder="e.g. 5">
+            </div>
+            <button class="limit-save" onclick="saveLimit()">Save</button>
+        </div>
+        <div id="limitError" style="display:none; color:#ef4444; font-size:12px;"></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tasks')">Per Task</button>
+        <button class="tab-btn" onclick="switchTab('daily')">Daily Summary</button>
+        <button class="tab-btn" onclick="switchTab('monthly')">Monthly Summary</button>
+    </div>
+
+    <!-- Per Task tab -->
+    <div id="tab-tasks" class="tab-panel active">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Task</th>
+                        <th>Model</th>
+                        <th class="right">Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionRows">
+                    <tr><td colspan="4" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Daily Summary tab -->
+    <div id="tab-daily" class="tab-panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-date">Date</th>
+                        <th class="right">Tasks</th>
+                        <th class="right">Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="dailyRows">
+                    <tr><td colspan="3" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Monthly Summary tab -->
+    <div id="tab-monthly" class="tab-panel">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-date">Month</th>
+                        <th class="right">Tasks</th>
+                        <th class="right">Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyRows">
+                    <tr><td colspan="3" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/constants.js"></script>
+
+<script>
+
+    function fmtCurrency(amount, maximumFractionDigits = 2) {
+        const v = typeof amount === 'number' && isFinite(amount) ? amount : 0;
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: maximumFractionDigits,
+        }).format(v < 0.001 && v !== 0 ? 0.001 : v);
+    }
+
+    function fmtNum(n, decimals = 2) {
+        const v = typeof n === 'number' && isFinite(n) ? n : 0;
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(v);
+    }
+
+    function fmt(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fmtDate(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function fmtTokens(n) {
+        if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+        if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+        return String(n);
+    }
+
+    function shortModel(m) {
+        return m ? m.replace('claude-', '').replace(/-2\d{6}$/, '') : '—';
+    }
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-btn').forEach((b, i) => {
+            b.classList.toggle('active', ['tasks', 'daily', 'monthly'][i] === name);
+        });
+        ['tasks', 'daily', 'monthly'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+        });
+    }
+
+    const PAGE_SIZE = 20;
+    let allPrompts = [];
+    let currentPage = 1;
+    let currentTotalSpend = 0;
+    let currentMonthlySpend = 0;
+    let currentDailySpend = 0;
+    let currentTaskCount = 0;
+    let currentLimit = null;
+    let currentMonthlyLimit = null;
+    let currentDailyLimit = null;
+
+    function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const page = allPrompts.filter(p => p.cost != null).slice(start, start + PAGE_SIZE);
+        const tbody = document.getElementById('sessionRows');
+
+        tbody.innerHTML = page.map(p => {
+            const task = p.task || '(no prompt)';
+            const costStr = p.cost != null ? fmtCurrency(p.cost, 6) : '';
+            return `<tr>
+                <td class="td-date">${fmt(p.timestamp)}</td>
+                <td class="td-task"><div class="td-task-text" title="${task.replace(/"/g, '&quot;')}">${task}</div></td>
+                <td class="td-model">${shortModel(p.model)}</td>
+                <td class="td-cost">${costStr}</td>
+            </tr>`;
+        }).join('');
+
+        const totalPages = Math.ceil(allPrompts.length / PAGE_SIZE);
+        const pg = document.getElementById('pagination');
+        if (totalPages <= 1) { pg.innerHTML = ''; return; }
+
+        pg.innerHTML = `
+            <button class="pg-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>←</button>
+            <span class="pg-info">Page ${currentPage} of ${totalPages}</span>
+            <button class="pg-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>→</button>
+        `;
+    }
+
+    function goPage(n) {
+        currentPage = n;
+        renderPage();
+        window.scrollTo(0, 0);
+    }
+
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function renderDaily(prompts) {
+        const byDay = {};
+        for (const p of prompts) {
+            if (!p.timestamp) continue;
+            const d = new Date(p.timestamp);
+            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            if (!byDay[key]) byDay[key] = { key, d, tasks: 0, cost: 0 };
+            byDay[key].tasks += 1;
+            if (p.cost != null) byDay[key].cost += p.cost;
+        }
+        const rows = Object.values(byDay).sort((a, b) => b.key.localeCompare(a.key));
+        const tbody = document.getElementById('dailyRows');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="empty">No data.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => `<tr>
+            <td class="td-date">${MONTH_NAMES[r.d.getMonth()]} ${r.d.getDate()}, ${r.d.getFullYear()}</td>
+            <td class="td-num">${r.tasks}</td>
+            <td class="td-cost">${fmtCurrency(r.cost, 6)}</td>
+        </tr>`).join('');
+    }
+
+    async function load() {
+        const [promptsRes, limitRes] = await Promise.all([
+            fetch('/api/cost/prompts'),
+            fetch('/api/cost/limit'),
+        ]);
+        const { prompts } = await promptsRes.json();
+        const { cost_limit, total_spend, monthly_spend, daily_spend, task_count } = await limitRes.json();
+
+        currentTotalSpend = total_spend ?? 0;
+        currentMonthlySpend = monthly_spend ?? 0;
+        currentDailySpend = daily_spend ?? 0;
+        currentTaskCount = task_count ?? 0;
+        currentLimit = cost_limit?.total ?? null;
+        currentMonthlyLimit = cost_limit?.monthly ?? null;
+        currentDailyLimit = cost_limit?.daily ?? null;
+        if (currentLimit != null) document.getElementById('limitInput').value = currentLimit;
+        if (currentMonthlyLimit != null) document.getElementById('monthlyLimitInput').value = currentMonthlyLimit;
+        if (currentDailyLimit != null) document.getElementById('dailyLimitInput').value = currentDailyLimit;
+
+        allPrompts = prompts;
+
+        const costed = prompts.filter(p => p.cost != null);
+        const avg = costed.length ? currentTotalSpend / costed.length : 0;
+
+        document.getElementById('totalCost').textContent = currentTotalSpend ? fmtCurrency(currentTotalSpend, 6) : '—';
+        document.getElementById('totalSessions').textContent = costed.length;
+        document.getElementById('avgCost').textContent = costed.length ? fmtCurrency(avg, 6) : '—';
+        document.getElementById('lastUpdated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+
+        if (!costed.length) {
+            document.getElementById('sessionRows').innerHTML = '<tr><td colspan="4" class="empty">No prompts found.</td></tr>';
+            document.getElementById('dailyRows').innerHTML = '<tr><td colspan="3" class="empty">No data.</td></tr>';
+            document.getElementById('monthlyRows').innerHTML = '<tr><td colspan="3" class="empty">No data.</td></tr>';
+            renderLimits();
+            return;
+        }
+
+        renderPage();
+        renderDaily(costed);
+        renderMonthly(costed);
+        renderLimits();
+    }
+
+
+    function renderMeta(metaId, spend, limit) {
+        const meta = document.getElementById(metaId);
+        if (limit === null || limit === undefined || limit <= 0) {
+            meta.classList.remove('over');
+            meta.innerHTML = MSG_NO_LIMIT;
+            return;
+        }
+        const pct = (spend / limit) * 100;
+        meta.classList.toggle('over', pct >= 100);
+        meta.textContent = `${fmtCurrency(spend)} / ${fmtCurrency(limit)} (${fmtNum(pct, 1)}%)`;
+    }
+
+    function renderLimits() {
+        renderMeta('limitMeta', currentTotalSpend, currentLimit);
+        renderMeta('monthlyMeta', currentMonthlySpend, currentMonthlyLimit);
+        renderMeta('dailyMeta', currentDailySpend, currentDailyLimit);
+    }
+
+    function renderMonthly(prompts) {
+        const byMonth = {};
+        for (const p of prompts) {
+            if (!p.timestamp) continue;
+            const d = new Date(p.timestamp);
+            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            if (!byMonth[key]) byMonth[key] = { key, d, tasks: 0, cost: 0 };
+            byMonth[key].tasks += 1;
+            if (p.cost != null) byMonth[key].cost += p.cost;
+        }
+        const rows = Object.values(byMonth).sort((a, b) => b.key.localeCompare(a.key));
+        const tbody = document.getElementById('monthlyRows');
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="empty">No data.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => `<tr>
+            <td class="td-date">${MONTH_NAMES[r.d.getMonth()]} ${r.d.getFullYear()}</td>
+            <td class="td-num">${r.tasks}</td>
+            <td class="td-cost">${fmtCurrency(r.cost, 6)}</td>
+        </tr>`).join('');
+    }
+
+    async function saveLimit() {
+        const totalVal = parseFloat(document.getElementById('limitInput').value);
+        const monthlyVal = parseFloat(document.getElementById('monthlyLimitInput').value);
+        const dailyVal = parseFloat(document.getElementById('dailyLimitInput').value);
+        const totalSet = !isNaN(totalVal) && totalVal > 0;
+        const monthlySet = !isNaN(monthlyVal) && monthlyVal > 0;
+        const dailySet = !isNaN(dailyVal) && dailyVal > 0;
+
+        const errEl = document.getElementById('limitError');
+        const err =
+            (totalSet && monthlySet && monthlyVal > totalVal) ? ERR_MONTHLY_EXCEEDS_TOTAL :
+            (totalSet && dailySet && dailyVal > totalVal) ? ERR_DAILY_EXCEEDS_TOTAL :
+            (monthlySet && dailySet && dailyVal > monthlyVal) ? ERR_DAILY_EXCEEDS_MONTHLY : null;
+        if (err) { errEl.textContent = err; errEl.style.display = 'block'; return; }
+        errEl.style.display = 'none';
+
+        const cost_limit = {};
+        if (totalSet) cost_limit.total = totalVal;
+        if (monthlySet) cost_limit.monthly = monthlyVal;
+        if (dailySet) cost_limit.daily = dailyVal;
+
+        const res = await fetch('/api/cost/limit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cost_limit }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+            errEl.textContent = data.error || ERR_SAVE_FAILED;
+            errEl.style.display = 'block';
+            return;
+        }
+        currentLimit = cost_limit.total ?? null;
+        currentMonthlyLimit = cost_limit.monthly ?? null;
+        currentDailyLimit = cost_limit.daily ?? null;
+        renderLimits();
+    }
+
+    load();
+</script>
+</body>
+</html>
